@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>For You · </title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --papel:#fdfbf7;
+    --papel-medio:#faf1e6;
+    --papel-borde:#eee0cf;
+    --scrim:243,231,217;
+    --tinta:#533642;
+    --tinta-suave:#7d5c63;
+    --oro:#b58d58;
+    --rosa:#c06885;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:"Cormorant Garamond","Cormorant",Garamond,"Times New Roman",Georgia,serif;
+    background:radial-gradient(120% 90% at 50% 0%, #2b1f2a 0%, #1d1520 45%, #120d14 100%);
+    display:flex;align-items:center;justify-content:center;
+    height:100vh;position:relative;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* halo cálido detrás de la lámina */
+  body::before{
+    content:"";position:absolute;width:min(90vw,640px);height:min(90vh,820px);
+    background:radial-gradient(closest-side, rgba(196,150,96,.20), transparent 72%);
+    filter:blur(10px);pointer-events:none;
+  }
+
+  /* ---------- lámina ---------- */
+  .marco{
+    position:relative;
+    width:min(93vw,436px);
+    height:min(95vh,752px);
+    border-radius:8px;
+    overflow:hidden;
+    background:radial-gradient(125% 95% at 50% 10%, var(--papel) 0%, var(--papel-medio) 48%, var(--papel-borde) 100%);
+    box-shadow:
+      0 40px 90px -20px rgba(0,0,0,.65),
+      0 2px 6px rgba(0,0,0,.35),
+      0 0 0 1px rgba(255,255,255,.06),
+      inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  /* viñeta suave */
+  .marco::after{
+    content:"";position:absolute;inset:0;z-index:6;pointer-events:none;
+    background:radial-gradient(115% 85% at 50% 38%, transparent 52%, rgba(120,88,64,.20) 100%);
+  }
+  /* doble filete dorado + esquineros */
+  .filete,.filete-2{position:absolute;z-index:5;pointer-events:none;border-radius:4px}
+  .filete{inset:14px;border:1px solid rgba(181,141,88,.42)}
+  .filete-2{inset:19px;border:1px solid rgba(181,141,88,.20)}
+  .esq{position:absolute;width:15px;height:15px;z-index:5;pointer-events:none;
+       border:1px solid rgba(181,141,88,.75)}
+  .e1{top:9px;left:9px;border-right:0;border-bottom:0}
+  .e2{top:9px;right:9px;border-left:0;border-bottom:0}
+  .e3{bottom:9px;left:9px;border-right:0;border-top:0}
+  .e4{bottom:9px;right:9px;border-left:0;border-top:0}
+
+  svg.lienzo{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2}
+
+  /* ---------- pétalos que caen ---------- */
+  .petalo{position:absolute;top:-9%;z-index:4;pointer-events:none;
+          animation:caer linear infinite;will-change:transform}
+  .petalo i{display:block;width:100%;height:100%;border-radius:64% 6% 64% 6%;
+            animation:derivar ease-in-out infinite alternate;
+            filter:drop-shadow(0 1px 1px rgba(150,95,115,.16))}
+  @keyframes caer{
+    0%{transform:translate3d(0,0,0);opacity:0}
+    7%{opacity:var(--o,.7)}
+    88%{opacity:var(--o,.7)}
+    100%{transform:translate3d(0,var(--h,760px),0);opacity:0}
+  }
+  @keyframes derivar{
+    from{transform:translateX(-16px) rotate(-30deg) scaleX(1)}
+    to{transform:translateX(16px) rotate(300deg) scaleX(.35)}
+  }
+
+  /* ---------- texto ---------- */
+  .texto{
+    position:absolute;left:0;right:0;bottom:0;z-index:7;
+    padding:76px 30px calc(34px + env(safe-area-inset-bottom,0px));
+    text-align:center;
+    background:linear-gradient(to top,
+      rgba(var(--scrim),.99) 32%,
+      rgba(var(--scrim),.90) 56%,
+      rgba(var(--scrim),0) 100%);
+  }
+  .ante{
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:.60rem;font-weight:400;letter-spacing:.42em;text-indent:.42em;
+    text-transform:uppercase;color:var(--oro);
+    opacity:0;animation:surge 1.6s ease 5.0s forwards;
+  }
+  .texto h1{
+    font-size:clamp(2.3rem,9vw,2.9rem);font-weight:400;font-style:italic;
+    line-height:1.05;letter-spacing:.01em;color:var(--tinta);margin-top:6px;
+    text-shadow:0 1px 0 rgba(255,255,255,.55);
+    opacity:0;animation:surge 1.7s ease 5.25s forwards;
+  }
+  .regla{display:flex;align-items:center;justify-content:center;gap:11px;
+         margin:13px auto 14px;max-width:200px;
+         opacity:0;animation:surge 1.6s ease 5.7s forwards}
+  .regla span{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(181,141,88,.75),transparent)}
+  .regla em{font-style:normal;color:var(--oro);font-size:.62rem;letter-spacing:.1em}
+  .texto p{
+    font-size:clamp(1.02rem,4.2vw,1.13rem);font-style:italic;font-weight:300;
+    color:var(--tinta-suave);line-height:1.55;max-width:26ch;margin:0 auto;
+    text-wrap:balance;
+    opacity:0;animation:surge 1.7s ease 5.95s forwards;
+  }
+  .firma{
+    display:block;margin-top:16px;font-size:.78rem;font-weight:400;
+    letter-spacing:.24em;text-indent:.24em;text-transform:uppercase;color:#9c7581;
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    opacity:0;animation:surge 1.6s ease 6.5s forwards;
+  }
+  @keyframes surge{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .corazon{color:var(--rosa);display:inline-block;font-size:.9em;margin-left:.15em;
+           animation:late 2.6s cubic-bezier(.4,0,.3,1) infinite}
+  @keyframes late{0%,72%,100%{transform:scale(1)}80%{transform:scale(1.28)}88%{transform:scale(1.06)}}
+
+  /* ---------- animaciones del jardín ---------- */
+  @keyframes dibujar{to{stroke-dashoffset:0}}
+
+  .abre{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:abrir 1.05s cubic-bezier(.22,.92,.26,1) backwards;
+    animation-delay:var(--d);
+  }
+  @keyframes abrir{
+    0%{transform:scale(.10) rotate(var(--r,14deg));opacity:0}
+    30%{opacity:1}
+    72%{transform:scale(1.05) rotate(0deg)}
+    100%{transform:scale(1) rotate(0);opacity:1}
+  }
+  .nucleo{
+    transform-box:fill-box;transform-origin:50% 42%;
+    animation:aparecer .85s cubic-bezier(.3,1.3,.5,1) backwards;animation-delay:var(--d);
+  }
+  @keyframes aparecer{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .brillo{
+    transform-box:fill-box;transform-origin:center;
+    animation:aparecer 1.3s ease backwards;animation-delay:var(--d);
+  }
+  .brota{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:brotar 1.25s cubic-bezier(.3,.9,.3,1) backwards;animation-delay:var(--d);
+  }
+  @keyframes brotar{
+    0%{transform:scaleY(.04) scaleX(.42);opacity:0}
+    35%{opacity:1}
+    100%{transform:scale(1);opacity:1}
+  }
+
+  .sway{transform-box:view-box;transform-origin:200px 604px;
+        animation:mecer var(--sd,8s) ease-in-out infinite;animation-delay:var(--sp,0s)}
+  @keyframes mecer{0%,100%{transform:rotate(-.85deg)}50%{transform:rotate(1.05deg)}}
+  .nod{transform-box:fill-box;transform-origin:50% 78%;
+       animation:asentir var(--nd,7s) ease-in-out infinite;animation-delay:var(--np,0s)}
+  @keyframes asentir{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001s!important;animation-delay:0s!important;
+      animation-iteration-count:1!important;transition-duration:.001s!important}
+  }
+</style>
+</head>
+<body>
+  <div class="marco" id="marco">
+    <svg class="lienzo" id="lienzo" viewBox="0 0 400 690" preserveAspectRatio="xMidYMid slice" aria-label="Ramo de astromelias">
+      <defs>
+        <!-- tépalos exteriores · rosa -->
+        <linearGradient id="tepA" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#fdf4e7"/>
+          <stop offset="20%"  stop-color="#fce6e2"/>
+          <stop offset="58%"  stop-color="#f6cbd6"/>
+          <stop offset="100%" stop-color="#eeb0c4"/>
+        </linearGradient>
+        <!-- tépalos interiores · rosa, con garganta dorada -->
+        <linearGradient id="tepB" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#f4cf7c"/>
+          <stop offset="16%"  stop-color="#fbe9bd"/>
+          <stop offset="42%"  stop-color="#fdeee6"/>
+          <stop offset="100%" stop-color="#f2bccc"/>
+        </linearGradient>
+        <!-- tépalos exteriores · coral -->
+        <linearGradient id="tepC" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#fdf3e4"/>
+          <stop offset="22%"  stop-color="#fbdfd0"/>
+          <stop offset="60%"  stop-color="#f6c3b0"/>
+          <stop offset="100%" stop-color="#eda791"/>
+        </linearGradient>
+        <!-- tépalos interiores · coral -->
+        <linearGradient id="tepD" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#f2c96f"/>
+          <stop offset="16%"  stop-color="#fbe7b3"/>
+          <stop offset="44%"  stop-color="#fdeade"/>
+          <stop offset="100%" stop-color="#f0b79e"/>
+        </linearGradient>
+
+        <radialGradient id="gHalo">
+          <stop offset="38%"  stop-color="#e5aabe" stop-opacity=".50"/>
+          <stop offset="100%" stop-color="#e5aabe" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gHalo2">
+          <stop offset="38%"  stop-color="#e8b39c" stop-opacity=".46"/>
+          <stop offset="100%" stop-color="#e8b39c" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gGarganta" cx="50%" cy="42%" r="62%">
+          <stop offset="0%"   stop-color="#fff6de"/>
+          <stop offset="55%"  stop-color="#f6d98c"/>
+          <stop offset="100%" stop-color="#e3b463" stop-opacity=".55"/>
+        </radialGradient>
+
+        <linearGradient id="gTallo" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#3f6537"/>
+          <stop offset="55%"  stop-color="#5b8449"/>
+          <stop offset="100%" stop-color="#77a05c"/>
+        </linearGradient>
+        <linearGradient id="gHoja" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#33562f"/>
+          <stop offset="45%"  stop-color="#527d43"/>
+          <stop offset="100%" stop-color="#7ea75f"/>
+        </linearGradient>
+        <linearGradient id="gCapullo" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#5d8442"/>
+          <stop offset="38%"  stop-color="#93ad63"/>
+          <stop offset="72%"  stop-color="#dcc79c"/>
+          <stop offset="100%" stop-color="#eeb3c2"/>
+        </linearGradient>
+
+        <filter id="suave" x="-35%" y="-35%" width="170%" height="170%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4.5" flood-color="#8a5a4a" flood-opacity="0.22"/>
+        </filter>
+        <filter id="grano">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/>
+          <feColorMatrix type="saturate" values="0"/>
+        </filter>
+      </defs>
+
+      <g id="jardin"></g>
+      <rect width="400" height="690" filter="url(#grano)" opacity=".055"
+            style="mix-blend-mode:multiply" pointer-events="none"/>
+    </svg>
+
+    <div class="filete"></div><div class="filete-2"></div>
+    <i class="esq e1"></i><i class="esq e2"></i><i class="esq e3"></i><i class="esq e4"></i>
+
+    <div class="texto">
+      <div class="ante"></div>
+      <h1>Para ti</h1>
+      <div class="regla"><span></span><em>&#10022;</em><span></span></div>
+      <p>lo hice con el amor del alma y de la luna</p>
+      <span class="firma">Con todo mi <span class="corazon">&#10084;</span></span>
+    </div>
+  </div>
+
+<script>
+/* ===================== utilidades ===================== */
+const rnd = (a,b) => a + Math.random()*(b-a);
+const n   = v => Number(v.toFixed(1));
+
+/* ===================== formas ===================== */
+/* Tépalo de astromelia: base angosta, se ensancha arriba y remata en punta. */
+function tepalo(len,w,punta){
+  return 'M0 0'
+   + ' C ' + n(-w*.26) + ' ' + n(-len*.16) + ', ' + n(-w*.94) + ' ' + n(-len*.46) + ', ' + n(-w*.80) + ' ' + n(-len*.78)
+   + ' C ' + n(-w*.72) + ' ' + n(-len*.95) + ', ' + n(-w*.30) + ' ' + n(-len*.98) + ', 0 ' + n(-len*(1+punta))
+   + ' C ' + n(w*.30)  + ' ' + n(-len*.98) + ', ' + n(w*.72)  + ' ' + n(-len*.95) + ', ' + n(w*.80) + ' ' + n(-len*.78)
+   + ' C ' + n(w*.94)  + ' ' + n(-len*.46) + ', ' + n(w*.26)  + ' ' + n(-len*.16) + ', 0 0 Z';
+}
+
+/* Vetas granate: la firma inconfundible de la astromelia. */
+function vetas(len,w,color,k){
+  let s='', N=7;
+  for(let i=0;i<N;i++){
+    const t  = (i-(N-1)/2)/((N-1)/2);
+    const x0 = n(t*w*.15), y0 = n(-len*(.22+Math.abs(t)*.06));
+    const x1 = n(t*w*.50), y1 = n(-len*(.58+(1-Math.abs(t))*.16)*rnd(.92,1.02));
+    const xm = n(x0*.35+x1*.65), ym = n((y0+y1)*.5);
+    s += '<path d="M'+x0+' '+y0+' Q '+xm+' '+ym+' '+x1+' '+y1+'" fill="none" stroke="'+color+'"'
+       + ' stroke-width="'+n(Math.max(.55,w*.052))+'" stroke-linecap="round"'
+       + ' opacity="'+(.58*k*rnd(.8,1.1)).toFixed(2)+'"'
+       + ' stroke-dasharray="'+n(len*rnd(.06,.15))+' '+n(len*rnd(.02,.05))+'"/>';
+  }
+  return s;
+}
+
+/* Estambres colgantes con anteras oscuras y pistilo. */
+function estambres(R){
+  let s='';
+  for(let k=0;k<6;k++){
+    const t  = (k-2.5)/2.5;
+    const ex = n(t*R*.46), ey = n(R*.30+Math.abs(t)*R*.11);
+    s += '<path d="M0 '+n(-R*.03)+' Q '+n(t*R*.12)+' '+n(R*.21)+' '+ex+' '+ey+'"'
+       + ' fill="none" stroke="#cda471" stroke-width="'+n(Math.max(.5,R*.030))+'"'
+       + ' stroke-linecap="round" opacity=".92"/>';
+    s += '<ellipse cx="'+ex+'" cy="'+ey+'" rx="'+n(R*.068)+'" ry="'+n(R*.031)+'"'
+       + ' transform="rotate('+(t*40).toFixed(0)+' '+ex+' '+ey+')" fill="#74402f"/>';
+  }
+  s += '<path d="M0 '+n(-R*.03)+' Q '+n(R*.05)+' '+n(R*.30)+' '+n(R*.08)+' '+n(R*.55)+'"'
+     + ' fill="none" stroke="#c99a63" stroke-width="'+n(Math.max(.5,R*.032))+'" stroke-linecap="round"/>';
+  s += '<circle cx="'+n(R*.08)+'" cy="'+n(R*.56)+'" r="'+n(R*.045)+'" fill="#a86f4d"/>';
+  return s;
+}
+
+/* Una flor: 3 tépalos externos + 3 internos vetados + garganta y estambres. */
+function astromelia(cx,cy,R,rot,start,pal){
+  let s = '<g transform="translate('+cx+' '+cy+') rotate('+rot+')" filter="url(#suave)">'
+        + '<g class="nod" style="--nd:'+rnd(6.5,9.5).toFixed(1)+'s;--np:'+rnd(-4,0).toFixed(1)+'s">';
+
+  s += '<g class="brillo" style="--d:'+start.toFixed(2)+'s">'
+     + '<ellipse rx="'+n(R*1.05)+'" ry="'+n(R*1.0)+'" fill="url(#'+pal.halo+')"/></g>';
+
+  /* verticilo exterior */
+  [0,120,240].forEach(function(a,i){
+    const d   = start + i*.07;
+    const len = R*1.05*rnd(.97,1.04), w = R*.50*rnd(.95,1.05);
+    s += '<g transform="rotate('+n(a+rnd(-5,5))+')">'
+       + '<g class="abre" style="--d:'+d.toFixed(2)+'s;--r:'+n(rnd(9,18))+'deg">'
+       + '<path d="'+tepalo(len,w,.075)+'" fill="url(#'+pal.out+')"'
+       + ' stroke="'+pal.borde+'" stroke-opacity=".38" stroke-width=".5"/>'
+       + '<path d="M0 '+n(-len*.12)+' L0 '+n(-len*.94)+'" fill="none"'
+       + ' stroke="'+pal.borde+'" stroke-opacity=".28" stroke-width=".55"/>'
+       + '</g></g>';
+  });
+
+  /* verticilo interior: los dos de arriba llevan las vetas más marcadas */
+  [60,180,300].forEach(function(a,i){
+    const d    = start + .26 + i*.07;
+    const alto = (a !== 180);
+    const len  = R*(alto?1.14:1.02)*rnd(.97,1.03), w = R*.38*rnd(.95,1.05);
+    s += '<g transform="rotate('+n(a+rnd(-5,5))+')">'
+       + '<g class="abre" style="--d:'+d.toFixed(2)+'s;--r:'+n(rnd(-18,-9))+'deg">'
+       + '<path d="'+tepalo(len,w,.14)+'" fill="url(#'+pal.in+')"'
+       + ' stroke="'+pal.borde+'" stroke-opacity=".32" stroke-width=".5"/>'
+       + vetas(len,w,pal.veta,alto?1:.55)
+       + '</g></g>';
+  });
+
+  s += '<g class="nucleo" style="--d:'+(start+.70).toFixed(2)+'s">'
+     + '<circle r="'+n(R*.17)+'" fill="url(#gGarganta)"/>'
+     + estambres(R) + '</g>';
+  return s + '</g></g>';
+}
+
+/* Capullo alargado: verde en la base, sonrojado en la punta. */
+function capullo(cx,cy,R,rot,d){
+  const h = R*2.35;
+  return '<g transform="translate('+cx+' '+cy+') rotate('+rot+')">'
+   + '<g class="brota" style="--d:'+d.toFixed(2)+'s">'
+   + '<path d="M0 '+n(R*.35)
+   +   ' C '+n(-R*.80)+' '+n(-R*.12)+', '+n(-R*.58)+' '+n(-h*.62)+', 0 '+n(-h)
+   +   ' C '+n(R*.58)+' '+n(-h*.62)+', '+n(R*.80)+' '+n(-R*.12)+', 0 '+n(R*.35)+' Z"'
+   +   ' fill="url(#gCapullo)" stroke="#7d9553" stroke-opacity=".4" stroke-width=".5"/>'
+   + '<path d="M '+n(-R*.05)+' '+n(R*.1)+' C '+n(-R*.42)+' '+n(-R*.4)+', '+n(-R*.32)+' '+n(-h*.6)+', '+n(-R*.08)+' '+n(-h*.92)+'"'
+   +   ' fill="none" stroke="#ffffff" stroke-opacity=".32" stroke-width=".8"/>'
+   + '<path d="M '+n(-R*.48)+' '+n(R*.3)+' Q '+n(-R*.98)+' '+n(-R*.55)+' '+n(-R*.22)+' '+n(-R*1.35)
+   +   ' Q '+n(-R*.1)+' '+n(-R*.2)+' '+n(-R*.48)+' '+n(R*.3)+' Z" fill="url(#gHoja)" opacity=".92"/>'
+   + '<path d="M '+n(R*.48)+' '+n(R*.3)+' Q '+n(R*.98)+' '+n(-R*.55)+' '+n(R*.22)+' '+n(-R*1.35)
+   +   ' Q '+n(R*.1)+' '+n(-R*.2)+' '+n(R*.48)+' '+n(R*.3)+' Z" fill="url(#gHoja)" opacity=".92"/>'
+   + '</g></g>';
+}
+
+/* Hoja lanceolada y ligeramente torcida, como la de la astromelia.
+   L = largo total; la anchura sale de L para conservar la proporción estrecha. */
+function hoja(x,y,ang,L,d,curva){
+  const c = (curva === undefined) ? .30 : curva;
+  const W = L*.135;
+  const tx = n(L*c*.55), ty = n(-L);
+  return '<g transform="translate('+x+' '+y+') rotate('+ang+')">'
+   + '<g class="brota" style="--d:'+d.toFixed(2)+'s">'
+   + '<path d="M0 0 C '+n(-W*1.15)+' '+n(-L*.26)+', '+n(-W*1.55+L*c*.28)+' '+n(-L*.70)+', '+tx+' '+ty
+   +   ' C '+n(W*1.70+L*c*.20)+' '+n(-L*.66)+', '+n(W*1.25)+' '+n(-L*.24)+', 0 0 Z"'
+   +   ' fill="url(#gHoja)" stroke="#2f5230" stroke-opacity=".40" stroke-width=".5"/>'
+   + '<path d="M0 0 Q '+n(L*c*.10)+' '+n(-L*.55)+' '+n(tx*.94)+' '+n(-L*.96)+'"'
+   +   ' fill="none" stroke="#2f5230" stroke-width=".65" opacity=".38"/>'
+   + '</g></g>';
+}
+
+function tallo(x1,y1,x2,y2,cx,cy,w,d,dur){
+  return '<path class="tallo" data-d="'+d+'" data-dur="'+dur+'"'
+   + ' d="M'+x1+' '+y1+' Q '+cx+' '+cy+' '+x2+' '+y2+'"'
+   + ' stroke="url(#gTallo)" stroke-width="'+w+'" fill="none" stroke-linecap="round"/>';
+}
+function grupo(dur,fase,contenido){
+  return '<g class="sway" style="--sd:'+dur+'s;--sp:'+fase+'s">'+contenido+'</g>';
+}
+
+/* ===================== composición ===================== */
+const B     = {x:200, y:604};
+const ROSA  = {out:'tepA', in:'tepB', veta:'#8d2f4b', borde:'#d295ab', halo:'gHalo'};
+const CORAL = {out:'tepC', in:'tepD', veta:'#9c4529', borde:'#dda087', halo:'gHalo2'};
+
+let arte = '';
+
+/* -- tallo trasero: sólo capullos, da profundidad -- */
+arte += grupo(9.4,-2.1,
+    tallo(B.x,B.y,292,398,258,512,3.0,0.55,1.05)
+  + hoja(270,486,38,66,1.55,.34)
+  + tallo(292,398,318,356,306,374,2.0,1.35,.40)
+  + capullo(318,356,9,22,2.05)
+  + capullo(292,390,8,-8,2.20)
+);
+
+/* -- tallo derecho (algo más bajo que el izquierdo, para romper la simetría) -- */
+arte += grupo(8.6,-1.2,
+  '<g transform="translate(4 20)">'
+  + tallo(B.x,B.y-20,302,330,262,486,4.2,0.42,1.24)
+  + hoja(248,470,48,84,1.05,.30)
+  + hoja(280,404,36,72,1.30,.26)
+  + hoja(264,436,58,58,1.45,.34)
+  + tallo(302,330,316,288,312,306,2.2,1.45,.35)
+  + tallo(302,330,266,314,284,328,2.2,1.55,.35)
+  + tallo(302,330,332,258,326,292,1.9,1.65,.35)
+  + capullo(332,258,9,24,2.35)
+  + astromelia(266,314,31,-15,2.44,CORAL)
+  + astromelia(316,288,35,17,2.16,ROSA)
+  + '</g>'
+);
+
+/* -- tallo izquierdo -- */
+arte += grupo(8.0,-3.4,
+    tallo(B.x,B.y,98,340,136,494,4.4,0.28,1.28)
+  + hoja(150,478,-46,92,0.90,-.30)
+  + hoja(124,412,-36,76,1.15,-.26)
+  + hoja(138,446,-58,60,1.32,-.34)
+  + tallo(98,340,82,300,86,320,2.3,1.25,.35)
+  + tallo(98,340,142,324,120,338,2.3,1.35,.35)
+  + tallo(98,340,70,266,78,300,1.9,1.45,.35)
+  + capullo(70,266,9,-22,2.25)
+  + astromelia(142,324,32,13,1.88,CORAL)
+  + astromelia(82,300,37,-19,1.60,ROSA)
+);
+
+/* -- tallo central: la umbela principal -- */
+arte += grupo(7.4,-0.6,
+    tallo(B.x,B.y,196,200,178,404,4.8,0.10,1.40)
+  + hoja(176,418,-26,100,0.85,-.28)
+  + hoja(214,432,28,94,1.00,.28)
+  + hoja(188,346,20,78,1.20,.24)
+  + hoja(204,278,34,62,1.40,.22)
+  + tallo(196,200,196,140,194,168,2.5,1.45,.35)
+  + tallo(196,200,142,190,168,202,2.5,1.55,.35)
+  + tallo(196,200,254,180,228,198,2.5,1.65,.35)
+  + tallo(196,200,232,124,226,164,2.0,1.75,.35)
+  + tallo(196,200,160,114,168,160,2.0,1.85,.35)
+  + capullo(232,124,10,18,2.45)
+  + capullo(160,114,9,-14,2.60)
+  + astromelia(142,190,42,-23,2.72,ROSA)
+  + astromelia(254,180,40,19,3.00,CORAL)
+  + astromelia(196,140,49,-5,3.30,ROSA)
+);
+
+const jardin = document.getElementById('jardin');
+jardin.innerHTML = arte;
+
+/* los tallos se dibujan solos, de la base hacia la flor */
+jardin.querySelectorAll('.tallo').forEach(function(p){
+  const L = p.getTotalLength();
+  p.style.strokeDasharray  = L + ' ' + L;
+  p.style.strokeDashoffset = L;
+  p.style.animation = 'dibujar ' + p.dataset.dur + 's cubic-bezier(.35,.1,.25,1) ' + p.dataset.d + 's forwards';
+});
+
+/* ===================== pétalos que caen ===================== */
+const marco = document.getElementById('marco');
+const tonos = ['#f8d3dd','#f2c0cf','#eeb09c','#fdeee6','#e6a7bd','#f6cbb8'];
+(function lluvia(){
+  const alto = marco.clientHeight;
+  for(let i=0;i<20;i++){
+    const p  = document.createElement('div');
+    p.className = 'petalo';
+    const an = 6 + Math.random()*9;
+    p.style.left   = (Math.random()*100).toFixed(1) + '%';
+    p.style.width  = an + 'px';
+    p.style.height = (an*1.7) + 'px';
+    p.style.setProperty('--h', Math.round(alto*1.2) + 'px');
+    p.style.setProperty('--o', (.32 + Math.random()*.38).toFixed(2));
+    p.style.animationDuration = (9 + Math.random()*9).toFixed(1) + 's';
+    p.style.animationDelay    = (5 + Math.random()*11).toFixed(1) + 's';
+    const t = tonos[i % tonos.length];
+    const hijo = document.createElement('i');
+    hijo.style.background = 'linear-gradient(140deg,#fffaf6 0%, ' + t + ' 55%, ' + t + ' 100%)';
+    hijo.style.animationDuration = (3.4 + Math.random()*3).toFixed(1) + 's';
+    p.appendChild(hijo);
+    marco.appendChild(p);
+  }
+})();
+
+/* ===================== corazones al tocar ===================== */
+marco.addEventListener('click', function(e){
+  const r = marco.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const h = document.createElement('div');
+  h.textContent = '❤';
+  h.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;color:#c06885;'
+    + 'font-size:' + (13 + Math.random()*16) + 'px;pointer-events:none;z-index:9;'
+    + 'transform:translate(-50%,-50%) scale(.6);opacity:0;'
+    + 'transition:transform 1.7s cubic-bezier(.2,.7,.3,1), opacity 1.7s ease-out;'
+    + 'text-shadow:0 1px 2px rgba(150,90,110,.25)';
+  marco.appendChild(h);
+  requestAnimationFrame(function(){
+    h.style.opacity = '1';
+    h.style.transform = 'translate(-50%,-50%)'
+      + ' translateY(-' + (90 + Math.random()*70).toFixed(0) + 'px)'
+      + ' translateX(' + (Math.random()*44 - 22).toFixed(0) + 'px)'
+      + ' scale(' + (1.1 + Math.random()*.5).toFixed(2) + ')'
+      + ' rotate(' + (Math.random()*40 - 20).toFixed(0) + 'deg)';
+    setTimeout(function(){ h.style.opacity = '0'; }, 700);
+  });
+  setTimeout(function(){ h.remove(); }, 1900);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regalos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fondo:#121a33;
+    --carta:#243566;
+    --carta-alta:#2b3f75;
+    --borde:#0b1124;
+    --tinta:#eae7f4;
+    --tinta-suave:#b9bad5;
+    --oro:#e6c98a;
+    --rosa:#e08aa4;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    padding:48px 16px 64px;
+    background:
+      radial-gradient(1100px 620px at 50% -10%, #2b3f75 0%, transparent 62%),
+      radial-gradient(760px 520px at 12% 108%, #1b2749 0%, transparent 60%),
+      var(--fondo);
+    color:var(--tinta);
+    font-family:"Cormorant Garamond", Georgia, serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:36px;
+  }
+  header{text-align:center;max-width:32rem}
+  h1{
+    margin:0;
+    font-size:clamp(2.1rem, 7vw, 3.1rem);
+    font-weight:400;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--oro);
+  }
+  h1::after{
+    content:"";
+    display:block;
+    width:88px;height:1px;
+    margin:18px auto 0;
+    background:linear-gradient(90deg, transparent, var(--oro), transparent);
+  }
+  header p{
+    margin:16px 0 0;
+    font-size:1.05rem;
+    font-style:italic;
+    color:var(--tinta-suave);
+  }
+  ul{
+    list-style:none;
+    margin:0;padding:0;
+    width:100%;
+    max-width:34rem;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  a.carta{
+    display:block;
+    padding:22px 24px;
+    background:linear-gradient(160deg, var(--carta-alta), var(--carta));
+    border:1px solid rgba(230,201,138,.34);
+    border-radius:12px;
+    color:inherit;
+    text-decoration:none;
+    box-shadow:0 14px 34px rgba(11,17,36,.5);
+    transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+  a.carta:hover,a.carta:focus-visible{
+    transform:translateY(-3px);
+    border-color:var(--oro);
+    box-shadow:0 20px 42px rgba(11,17,36,.62);
+  }
+  a.carta:focus-visible{outline:2px solid var(--oro);outline-offset:3px}
+  .titulo{
+    display:block;
+    font-size:1.5rem;
+    letter-spacing:.05em;
+    color:var(--tinta);
+  }
+  .nota{
+    display:block;
+    margin-top:6px;
+    font-size:1rem;
+    font-style:italic;
+    color:var(--tinta-suave);
+  }
+  .corazon{color:var(--rosa)}
+  footer{
+    font-size:.95rem;
+    font-style:italic;
+    color:var(--tinta-suave);
+    opacity:.8;
+  }
+  @media (prefers-reduced-motion: reduce){
+    a.carta{transition:none}
+    a.carta:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Regalos</h1>
+    <p>Cositas hechas a mano <span class="corazon">&#10084;</span></p>
+  </header>
+
+  <ul>
+    <li>
+      <a class="carta" href="pa-tu-amarillo.html">
+        <span class="titulo">Pa&#8217; ti &#183; lirios amarillos</span>
+        <span class="nota">La l&#225;mina en &#237;ndigo de medianoche, con pan de oro.</span>
+      </a>
+    </li>
+    <li>
+      <a class="carta" href="pa-tu.html">
+        <span class="titulo">Pa&#8217; ti &#183; la original</span>
+        <span class="nota">La primera versi&#243;n, en papel crema.</span>
+      </a>
+    </li>
+    <li>
+      <a class="carta" href="consola-del-corazon.html">
+        <span class="titulo">Consola del Coraz&#243;n</span>
+        <span class="nota">La consola retro, p&#237;xel a p&#237;xel.</span>
+      </a>
+    </li>
+  </ul>
+
+  <footer>Hecho con calma, para ti.</footer>
+</body>
+</html>

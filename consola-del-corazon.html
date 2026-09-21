@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html{color-scheme:dark}
+  body{margin:0}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>Consola del Corazón</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
+<style>
+  :root{
+    --plum-950:#0E040C;
+    --plum-900:#1A0716;
+    --plum-800:#250B20;
+    --plum-700:#37122F;
+    --plum-600:#4A1A3E;
+    --plum-500:#632453;
+    --rose:#FF6FA5;
+    --rose-soft:#FFA8CB;
+    --rose-pale:#FFD9E7;
+    --cream:#FFF1E8;
+    --mauve:#C093B2;
+    --gold:#FFD27D;
+    --paper:#FFF4F7;
+    --ink:#2B0B1E;
+    --px:'Silkscreen','Courier New',monospace;
+    --ui:'Pixelify Sans','Trebuchet MS',system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:radial-gradient(120% 80% at 50% 0%, #3A1230 0%, #1A0716 55%, #0E040C 100%);
+    color:var(--cream);
+    font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ---------- fondo: corazones a la deriva ---------- */
+  .wallpaper{position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0}
+  .drift{
+    position:absolute; bottom:-40px; width:21px; height:18px;
+    background-repeat:no-repeat; background-size:100% 100%;
+    image-rendering:pixelated;
+    opacity:.15;
+    animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{transform:translateY(0) translateX(0)}
+    100%{transform:translateY(-120vh) translateX(var(--sway,14px))}
+  }
+
+  /* ---------- portada ---------- */
+  .stage{position:relative; z-index:1; max-width:566px; margin:0 auto; padding:26px 16px 54px}
+
+  .titlecard{text-align:center; margin-bottom:18px}
+  .eyebrow{font-family:var(--px); font-size:9px; letter-spacing:.28em; color:var(--gold); margin:0 0 10px}
+  h1{
+    font-family:var(--px); font-weight:700;
+    font-size:clamp(19px,5.4vw,27px); line-height:1.35;
+    margin:0; color:var(--rose-pale); text-wrap:balance;
+    text-shadow:0 3px 0 var(--plum-900), 0 0 22px rgba(255,111,165,.35);
+  }
+  .sub{font-size:14px; color:var(--mauve); margin:10px auto 0; max-width:38ch; line-height:1.6}
+
+  /* ---------- carcasa ---------- */
+  .console{
+    background:linear-gradient(180deg,#5A2049 0%,#3B1332 42%,#2A0C24 100%);
+    border:4px solid var(--plum-950);
+    box-shadow:
+      inset 0 3px 0 rgba(255,169,203,.35),
+      inset 0 -4px 0 rgba(0,0,0,.45),
+      0 10px 0 var(--plum-950),
+      0 10px 34px rgba(0,0,0,.55);
+    padding:14px 14px 16px;
+    user-select:none;
+  }
+
+  .bezel{
+    background:var(--plum-950);
+    border:3px solid #0A0309;
+    box-shadow:inset 0 0 0 3px #3A1230, inset 0 4px 12px rgba(0,0,0,.9);
+    padding:9px;
+  }
+
+  .hud{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-family:var(--px); font-size:9px; letter-spacing:.12em;
+    color:var(--rose-soft); padding:2px 2px 8px;
+  }
+  .lamp{
+    display:inline-block; width:7px; height:7px; background:var(--rose);
+    box-shadow:0 0 8px var(--rose); margin-right:7px; vertical-align:1px;
+    animation:pulse 2.6s steps(2,end) infinite;
+  }
+  @keyframes pulse{0%,60%{opacity:1}61%,100%{opacity:.35}}
+  #hudMsg{color:var(--cream)}
+  .score{color:var(--gold); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+  .screen{
+    position:relative; width:min(100%,58vh); aspect-ratio:1/1; margin:0 auto;
+    background:var(--paper);
+    box-shadow:inset 0 0 0 2px #0A0309, 0 0 26px rgba(255,111,165,.22);
+  }
+  #lienzo{display:block; width:100%; height:100%; touch-action:none; cursor:crosshair; image-rendering:pixelated}
+  .scanlines{
+    position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(180deg, rgba(43,11,30,.055) 0 2px, transparent 2px 4px);
+    mix-blend-mode:multiply;
+  }
+  .sparks{position:absolute; inset:0; pointer-events:none; overflow:hidden}
+  .spark{
+    position:absolute; width:15px; height:13px; margin:-7px 0 0 -8px;
+    background-repeat:no-repeat; background-size:100% 100%;
+    image-rendering:pixelated;
+    animation:float 1.5s steps(9,end) forwards;
+  }
+  @keyframes float{
+    0%{transform:translateY(0) scale(.7); opacity:0}
+    18%{transform:translateY(-6px) scale(1); opacity:1}
+    100%{transform:translateY(-52px) scale(1.15); opacity:0}
+  }
+
+  /* ---------- marquesina ---------- */
+  .marquee{margin-top:9px; overflow:hidden; background:#08030A; border-top:2px solid #3A1230; padding:6px 0}
+  .track{
+    display:flex; width:max-content;
+    font-family:var(--px); font-size:9px; letter-spacing:.16em; color:var(--rose-soft);
+    animation:slide 46s linear infinite;
+  }
+  .track span{padding-right:34px; white-space:nowrap}
+  .track b{color:var(--gold); font-weight:400}
+  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ---------- tablero de mandos ---------- */
+  .deck{display:flex; flex-direction:column; gap:13px; margin-top:15px}
+  .group{display:flex; flex-direction:column; gap:7px}
+  .label{font-family:var(--px); font-size:8px; letter-spacing:.22em; color:var(--mauve)}
+  .row{display:flex; flex-wrap:wrap; gap:7px}
+
+  .pal{display:grid; grid-template-columns:repeat(9,1fr); gap:6px}
+  .sw{
+    appearance:none; padding:0; aspect-ratio:1/1; width:100%;
+    border:2px solid var(--plum-950); box-shadow:0 3px 0 var(--plum-950);
+    cursor:pointer; transition:transform .05s steps(1,end);
+  }
+  .sw[aria-pressed="true"]{
+    transform:translateY(3px); box-shadow:0 0 0 var(--plum-950);
+    outline:2px solid var(--cream); outline-offset:-6px;
+  }
+  .custom{position:relative; overflow:hidden; background:linear-gradient(135deg,#FF6FA5,#FFD27D,#64C6E8)}
+  .custom input{
+    position:absolute; inset:-8px; width:calc(100% + 16px); height:calc(100% + 16px);
+    border:0; padding:0; background:transparent; cursor:pointer; opacity:0;
+  }
+  .custom::after{
+    content:'+'; position:absolute; inset:0; display:grid; place-items:center;
+    font-family:var(--px); font-size:13px; color:var(--ink); pointer-events:none;
+  }
+
+  .btn{
+    font-family:var(--ui); font-weight:600; font-size:13px; line-height:1;
+    color:var(--cream); background:var(--plum-600);
+    border:2px solid var(--plum-950); box-shadow:0 4px 0 var(--plum-950);
+    padding:9px 11px; cursor:pointer;
+    transition:transform .05s steps(1,end);
+  }
+  .btn:hover{background:var(--plum-500)}
+  .btn:active{transform:translateY(4px); box-shadow:0 0 0 var(--plum-950)}
+  .btn[aria-pressed="true"]{
+    background:var(--rose); color:var(--ink);
+    transform:translateY(4px); box-shadow:0 0 0 var(--plum-950);
+  }
+  .btn:disabled{opacity:.4; cursor:default}
+  .btn.mini{font-family:var(--px); font-size:11px; padding:10px 12px}
+  .btn.glyph{font-size:16px; padding:7px 13px; line-height:1.25}
+  .btn.wide{flex:1 1 106px}
+  .btn.save{background:var(--gold); color:var(--ink)}
+  .btn.save:hover{background:#FFE0A0}
+  .btn.warn{background:#E0476B; color:var(--cream)}
+  .btn.warn:hover{background:#EE5C7E}
+
+  :where(.btn,.sw,input):focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+
+  footer{margin-top:26px; text-align:center; color:var(--mauve); font-size:13.5px; line-height:1.7}
+  .tip{
+    display:inline-block; margin-top:12px; padding:9px 13px;
+    border:2px solid var(--plum-700); background:rgba(255,111,165,.06);
+    color:var(--rose-pale); font-size:12.5px; max-width:42ch; text-align:left;
+  }
+  .sign{font-family:var(--px); font-size:9px; letter-spacing:.2em; color:var(--rose); margin-top:18px}
+
+  @media (max-width:420px){
+    .stage{padding:18px 11px 40px}
+    .console{padding:10px 10px 12px}
+    .btn{font-size:12px; padding:8px 9px}
+    .pal{grid-template-columns:repeat(8,1fr)}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .drift,.spark{display:none}
+    .track{animation:none}
+    .lamp{animation:none}
+  }
+</style>
+
+<div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+
+<main class="stage">
+  <header class="titlecard">
+    <h1>Pinta</h1>
+  </header>
+
+  <div class="console">
+    <div class="bezel">
+      <div class="hud">
+        <span><span class="lamp"></span><span id="hudMsg">LÁPIZ</span></span>
+        <span class="score">♥ <span id="hudCount">0</span> PÍXELES</span>
+      </div>
+
+      <div class="screen">
+        <canvas id="lienzo" role="img" aria-label="Lienzo de píxeles de 40 por 40. Arrastra el dedo o el mouse para pintar."></canvas>
+        <div class="scanlines"></div>
+        <div class="sparks" id="sparks"></div>
+      </div>
+
+      <div class="marquee">
+        <div class="track" id="track"></div>
+      </div>
+    </div>
+
+    <div class="deck">
+      <div class="group">
+        <span class="label" id="lbl-col">COLORES</span>
+        <div class="pal" id="pal" role="group" aria-labelledby="lbl-col"></div>
+      </div>
+
+      <div class="group">
+        <span class="label" id="lbl-her">HERRAMIENTAS</span>
+        <div class="row" role="group" aria-labelledby="lbl-her">
+          <button class="btn wide" data-tool="lapiz" aria-pressed="true">Lápiz</button>
+          <button class="btn wide" data-tool="borrador" aria-pressed="false">Borrar</button>
+          <button class="btn wide" data-tool="bote" aria-pressed="false">Rellenar</button>
+          <button class="btn wide" data-tool="gotero" aria-pressed="false">Copiar</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label" id="lbl-sel">SELLOS</span>
+        <div class="row" role="group" aria-labelledby="lbl-sel">
+          <button class="btn glyph" data-tool="sello:corazon" aria-pressed="false" aria-label="Sello corazón">♥</button>
+          <button class="btn glyph" data-tool="sello:estrella" aria-pressed="false" aria-label="Sello estrella">★</button>
+          <button class="btn glyph" data-tool="sello:rosa" aria-pressed="false" aria-label="Sello rosa">✿</button>
+          <button class="btn glyph" data-tool="sello:carta" aria-pressed="false" aria-label="Sello carta">✉</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label" id="lbl-aju">TRAZO Y AJUSTES</span>
+        <div class="row" role="group" aria-labelledby="lbl-aju">
+          <button class="btn mini" data-size="1" aria-pressed="true">1</button>
+          <button class="btn mini" data-size="2" aria-pressed="false">2</button>
+          <button class="btn mini" data-size="3" aria-pressed="false">3</button>
+          <button class="btn" id="btnMirror" aria-pressed="false">Simetría</button>
+          <button class="btn" id="btnGrid" aria-pressed="true">Cuadrícula</button>
+          <button class="btn mini" id="btnSound" aria-pressed="true" aria-label="Sonido">♪</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label" id="lbl-acc">ACCIONES</span>
+        <div class="row" role="group" aria-labelledby="lbl-acc">
+          <button class="btn wide" id="btnUndo">Deshacer</button>
+          <button class="btn wide" id="btnRedo">Rehacer</button>
+          <button class="btn wide" id="btnClear">Limpiar</button>
+          <button class="btn wide save" id="btnSave" hidden>Guardar PNG</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+
+  </footer>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  var GW = 40, GH = 40, PAPER = '#FFF4F7';
+
+  var PALETTE = [
+    '#2B0B1E','#5E1533','#A32B4F','#E0476B','#FF6FA5','#FF9EC4','#FFC9DE','#FFF0F5',
+    '#FFD27D','#F2A25C','#C36BD6','#7B4FC4','#4A5FD1','#64C6E8','#5FC98A','#8A6B54'
+  ];
+
+  var FRASES = [
+    'DIBUJA ALGO',
+    'PIXEL A PIXEL',
+    'SI TE EQUIVOCAS HAY DESHACER',
+    'MIL SEISCIENTOS CUADRITOS',
+    'PINTA CON EL DEDO'
+  ];
+
+  var STAMPS = {
+    corazon:  ['.11.11.','1113111','1111111','.11111.','..111..','...1...'],
+    estrella: ['...1...','..131..','1113111','.13331.','..131..','.11.11.','1.....1'],
+    rosa:     ['.11111.','1133311','1131311','1133311','.11111.','...g...','..g.g..'],
+    carta:    ['1111111','1311131','1133311','1113111','1111111']
+  };
+
+  var NOMBRES = {
+    lapiz:'LÁPIZ', borrador:'BORRADOR', bote:'BOTE DE PINTURA', gotero:'GOTERO',
+    'sello:corazon':'SELLO CORAZÓN', 'sello:estrella':'SELLO ESTRELLA',
+    'sello:rosa':'SELLO ROSA', 'sello:carta':'SELLO CARTA'
+  };
+
+  var grid = new Array(GW * GH).fill(null);
+  var undoStack = [], redoStack = [];
+  var tool = 'lapiz', color = '#FF6FA5', size = 1;
+  var mirror = false, showGrid = true, sound = true;
+  var painted = 0, drawing = false, lastCell = null, hover = null;
+  var lastSpark = 0, msgTimer = null, clearArmed = false, clearTimer = null;
+  var needsDraw = false;
+
+  var cv = document.getElementById('lienzo');
+  var ctx = cv.getContext('2d');
+  var sparks = document.getElementById('sparks');
+  var hudMsg = document.getElementById('hudMsg');
+  var hudCount = document.getElementById('hudCount');
+  var btnSave = document.getElementById('btnSave');
+  var btnClear = document.getElementById('btnClear');
+
+  function shade(hex, amt){
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt >= 0){
+      r = Math.round(r + (255 - r) * amt);
+      g = Math.round(g + (255 - g) * amt);
+      b = Math.round(b + (255 - b) * amt);
+    } else {
+      var k = 1 + amt;
+      r = Math.round(r * k); g = Math.round(g * k); b = Math.round(b * k);
+    }
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  function heartSVG(fill){
+    var rects =
+      '<rect x="1" y="0" width="2" height="1"/><rect x="4" y="0" width="2" height="1"/>' +
+      '<rect x="0" y="1" width="7" height="2"/>' +
+      '<rect x="1" y="3" width="5" height="1"/>' +
+      '<rect x="2" y="4" width="3" height="1"/>' +
+      '<rect x="3" y="5" width="1" height="1"/>';
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 6' fill='" + fill + "'>" + rects + "</svg>";
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  }
+
+  /* ---------- lienzo ---------- */
+  function idx(x, y){ return y * GW + x; }
+
+  function setCell(x, y, c){
+    if (x < 0 || y < 0 || x >= GW || y >= GH) return;
+    var i = idx(x, y);
+    if (grid[i] === c) return;
+    if (c) { painted++; }
+    grid[i] = c;
+  }
+
+  function pushUndo(){
+    undoStack.push(grid.slice());
+    if (undoStack.length > 60) undoStack.shift();
+    redoStack.length = 0;
+  }
+
+  function schedule(){
+    if (needsDraw) return;
+    needsDraw = true;
+    requestAnimationFrame(function(){ needsDraw = false; draw(); });
+  }
+
+  function draw(){
+    var W = cv.width;
+    if (!W) return;
+    var cell = W / GW;
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(0, 0, W, W);
+
+    for (var y = 0; y < GH; y++){
+      for (var x = 0; x < GW; x++){
+        var c = grid[idx(x, y)];
+        if (!c) continue;
+        var x0 = Math.round(x * cell), y0 = Math.round(y * cell);
+        ctx.fillStyle = c;
+        ctx.fillRect(x0, y0, Math.round((x + 1) * cell) - x0, Math.round((y + 1) * cell) - y0);
+      }
+    }
+
+    var t = Math.max(1, Math.round(cell / 14));
+    if (showGrid){
+      ctx.fillStyle = 'rgba(43,11,30,0.10)';
+      for (var i = 1; i < GW; i++){
+        var p = Math.round(i * cell);
+        ctx.fillRect(p, 0, t, W);
+        ctx.fillRect(0, p, W, t);
+      }
+    }
+    if (mirror){
+      ctx.fillStyle = 'rgba(255,111,165,0.55)';
+      var mid = Math.round(W / 2) - Math.round(t / 2);
+      for (var d = 0; d < W; d += t * 6) ctx.fillRect(mid, d, t, t * 3);
+    }
+    if (hover && !drawing){
+      ctx.fillStyle = 'rgba(43,11,30,0.55)';
+      var hx = Math.round(hover.x * cell), hy = Math.round(hover.y * cell);
+      var hw = Math.round((hover.x + 1) * cell) - hx, hh = Math.round((hover.y + 1) * cell) - hy;
+      ctx.fillRect(hx, hy, hw, t); ctx.fillRect(hx, hy + hh - t, hw, t);
+      ctx.fillRect(hx, hy, t, hh); ctx.fillRect(hx + hw - t, hy, t, hh);
+    }
+  }
+
+  function resize(){
+    var r = cv.getBoundingClientRect();
+    if (!r.width) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var w = Math.max(GW, Math.round(r.width * dpr));
+    if (cv.width !== w){ cv.width = w; cv.height = w; }
+    draw();
+  }
+
+  /* ---------- pintar ---------- */
+  function paintCell(x, y){
+    var c = (tool === 'borrador') ? null : color;
+    var o = Math.floor((size - 1) / 2);
+    for (var dy = 0; dy < size; dy++){
+      for (var dx = 0; dx < size; dx++){
+        var px = x - o + dx, py = y - o + dy;
+        setCell(px, py, c);
+        if (mirror) setCell(GW - 1 - px, py, c);
+      }
+    }
+  }
+
+  function lineTo(a, b){
+    var x0 = a.x, y0 = a.y, x1 = b.x, y1 = b.y;
+    var dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    var sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    var err = dx + dy;
+    for (var guard = 0; guard < 4000; guard++){
+      paintCell(x0, y0);
+      if (x0 === x1 && y0 === y1) break;
+      var e2 = 2 * err;
+      if (e2 >= dy){ err += dy; x0 += sx; }
+      if (e2 <= dx){ err += dx; y0 += sy; }
+    }
+  }
+
+  function bucket(sx, sy){
+    var target = grid[idx(sx, sy)] || null;
+    if (target === color) return;
+    var stack = [[sx, sy]];
+    while (stack.length){
+      var p = stack.pop(), x = p[0], y = p[1];
+      if (x < 0 || y < 0 || x >= GW || y >= GH) continue;
+      var i = idx(x, y);
+      if ((grid[i] || null) !== target) continue;
+      grid[i] = color; painted++;
+      stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+  }
+
+  function stamp(name, cx, cy){
+    var rows = STAMPS[name];
+    if (!rows) return;
+    var h = rows.length, w = rows[0].length;
+    var ox = cx - Math.floor(w / 2), oy = cy - Math.floor(h / 2);
+    for (var y = 0; y < h; y++){
+      for (var x = 0; x < w; x++){
+        var ch = rows[y].charAt(x);
+        if (ch === '.') continue;
+        var c = color;
+        if (ch === '3') c = shade(color, 0.45);
+        else if (ch === '2') c = shade(color, -0.35);
+        else if (ch === 'g') c = '#5FC98A';
+        setCell(ox + x, oy + y, c);
+        if (mirror) setCell(GW - 1 - (ox + x), oy + y, c);
+      }
+    }
+  }
+
+  function cellAt(e){
+    var r = cv.getBoundingClientRect();
+    var x = Math.floor((e.clientX - r.left) / r.width * GW);
+    var y = Math.floor((e.clientY - r.top) / r.height * GH);
+    return { x: Math.max(0, Math.min(GW - 1, x)), y: Math.max(0, Math.min(GH - 1, y)) };
+  }
+
+  /* ---------- corazones que suben ---------- */
+  function spark(e){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var now = Date.now();
+    if (now - lastSpark < 420 || Math.random() > 0.45) return;
+    lastSpark = now;
+    var r = sparks.getBoundingClientRect();
+    var d = document.createElement('div');
+    d.className = 'spark';
+    d.style.left = (e.clientX - r.left) + 'px';
+    d.style.top = (e.clientY - r.top) + 'px';
+    d.style.backgroundImage = heartSVG(tool === 'borrador' ? '#FFC9DE' : color);
+    d.addEventListener('animationend', function(){ d.remove(); });
+    sparks.appendChild(d);
+  }
+
+  /* ---------- sonido ---------- */
+  var actx = null;
+  function blip(freq, dur, type, vol){
+    if (!sound) return;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!actx) actx = new AC();
+      if (actx.state === 'suspended') actx.resume();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'square';
+      o.frequency.value = freq;
+      o.connect(g); g.connect(actx.destination);
+      var t = actx.currentTime, v = vol || 0.05;
+      g.gain.setValueAtTime(v, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.07));
+      o.start(t); o.stop(t + (dur || 0.07) + 0.02);
+    }catch(err){ /* sin sonido, sin drama */ }
+  }
+  function chord(notes, step){
+    notes.forEach(function(f, i){ setTimeout(function(){ blip(f, 0.09); }, i * (step || 70)); });
+  }
+
+  /* ---------- HUD ---------- */
+  function hud(text, hold){
+    if (msgTimer) clearTimeout(msgTimer);
+    hudMsg.textContent = text;
+    if (hold){
+      msgTimer = setTimeout(function(){ hudMsg.textContent = NOMBRES[tool] || 'LÁPIZ'; }, hold);
+    }
+  }
+  function tick(){ hudCount.textContent = painted; }
+
+  /* ---------- estado de botones ---------- */
+  function syncTools(){
+    document.querySelectorAll('[data-tool]').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
+    });
+    hud(NOMBRES[tool] || 'LÁPIZ');
+  }
+  function syncSizes(){
+    document.querySelectorAll('[data-size]').forEach(function(b){
+      b.setAttribute('aria-pressed', String(Number(b.dataset.size) === size));
+    });
+  }
+  function syncSwatches(){
+    document.querySelectorAll('.sw[data-color]').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.color.toLowerCase() === color.toLowerCase()));
+    });
+  }
+
+  /* ---------- construcción de la paleta ---------- */
+  (function buildPalette(){
+    var pal = document.getElementById('pal');
+    PALETTE.forEach(function(hex){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sw';
+      b.dataset.color = hex;
+      b.style.background = hex;
+      b.setAttribute('aria-pressed', String(hex === color));
+      b.setAttribute('aria-label', 'Color ' + hex);
+      b.addEventListener('click', function(){
+        color = hex;
+        if (tool === 'borrador' || tool === 'gotero'){ tool = 'lapiz'; syncTools(); }
+        syncSwatches();
+        blip(520 + PALETTE.indexOf(hex) * 28, 0.05);
+      });
+      pal.appendChild(b);
+    });
+
+    var wrap = document.createElement('span');
+    wrap.className = 'sw custom';
+    var inp = document.createElement('input');
+    inp.type = 'color';
+    inp.value = color;
+    inp.setAttribute('aria-label', 'Elegir un color propio');
+    inp.addEventListener('input', function(){
+      color = inp.value;
+      if (tool === 'borrador' || tool === 'gotero'){ tool = 'lapiz'; syncTools(); }
+      syncSwatches();
+    });
+    wrap.appendChild(inp);
+    pal.appendChild(wrap);
+  })();
+
+  /* ---------- marquesina ---------- */
+  (function buildMarquee(){
+    var track = document.getElementById('track');
+    var line = FRASES.map(function(f){ return f + ' <b>&hearts;</b>'; }).join(' ');
+    for (var i = 0; i < 2; i++){
+      var s = document.createElement('span');
+      s.innerHTML = line;
+      track.appendChild(s);
+    }
+  })();
+
+  /* ---------- corazones de fondo ---------- */
+  (function buildWallpaper(){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var wp = document.getElementById('wallpaper');
+    var tones = ['#FF6FA5','#FFA8CB','#FFD27D','#C36BD6'];
+    for (var i = 0; i < 11; i++){
+      var d = document.createElement('div');
+      d.className = 'drift';
+      var scale = 0.7 + Math.random() * 1.6;
+      d.style.left = (Math.random() * 100) + '%';
+      d.style.width = Math.round(21 * scale) + 'px';
+      d.style.height = Math.round(18 * scale) + 'px';
+      d.style.backgroundImage = heartSVG(tones[i % tones.length]);
+      d.style.setProperty('--sway', (Math.random() * 80 - 40) + 'px');
+      d.style.animationDuration = (22 + Math.random() * 26) + 's';
+      d.style.animationDelay = (-Math.random() * 40) + 's';
+      wp.appendChild(d);
+    }
+  })();
+
+  /* ---------- dibujo inicial: un corazón ---------- */
+  (function seed(){
+    var cx = 19.6, cy = 18.2, R = 13.2;
+    var INK = '#5E1533', BODY = '#E0476B', DEEP = '#A32B4F', SHINE = '#FFC9DE';
+
+    function inside(x, y){
+      var u = (x + 0.5 - cx) / R;
+      var v = (cy - (y + 0.5)) / R;
+      var a = u * u + v * v - 1;
+      return a * a * a - u * u * v * v * v <= 0;
+    }
+
+    var mask = [];
+    for (var y = 0; y < GH; y++){
+      for (var x = 0; x < GW; x++) mask[idx(x, y)] = inside(x, y);
+    }
+
+    for (var y2 = 0; y2 < GH; y2++){
+      for (var x2 = 0; x2 < GW; x2++){
+        var i = idx(x2, y2);
+        if (!mask[i]) continue;
+        var edge = x2 === 0 || y2 === 0 || x2 === GW - 1 || y2 === GH - 1 ||
+                   !mask[idx(x2 - 1, y2)] || !mask[idx(x2 + 1, y2)] ||
+                   !mask[idx(x2, y2 - 1)] || !mask[idx(x2, y2 + 1)];
+        if (edge){ grid[i] = INK; continue; }
+        var u = (x2 + 0.5 - cx) / R, v = (cy - (y2 + 0.5)) / R;
+        var dsx = x2 - (cx - 5.4), dsy = y2 - (cy - 5.2);
+        if (dsx * dsx + dsy * dsy < 6.2) grid[i] = SHINE;
+        else if (u > 0.3 && v < 0.2) grid[i] = DEEP;
+        else grid[i] = BODY;
+      }
+    }
+
+    grid[idx(4, 3)] = '#FFD27D';
+    grid[idx(3, 4)] = '#FFD27D';
+    grid[idx(36, 5)] = '#FFD27D';
+    grid[idx(35, 6)] = '#FFD27D';
+    grid[idx(5, 36)] = '#FFA8CB';
+    grid[idx(36, 34)] = '#FFA8CB';
+    grid[idx(2, 20)] = '#FFA8CB';
+    grid[idx(37, 22)] = '#FFD27D';
+  })();
+
+  /* ---------- eventos del lienzo ---------- */
+  cv.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    var c = cellAt(e);
+
+    if (tool === 'gotero'){
+      var got = grid[idx(c.x, c.y)];
+      if (got){ color = got; syncSwatches(); }
+      tool = 'lapiz'; syncTools();
+      hud(got ? 'COLOR TOMADO' : 'AHÍ NO HAY COLOR', 1600);
+      blip(880, 0.06, 'triangle');
+      schedule();
+      return;
+    }
+
+    pushUndo();
+
+    if (tool === 'bote'){
+      bucket(c.x, c.y);
+      if (mirror) bucket(GW - 1 - c.x, c.y);
+      blip(300, 0.14, 'sawtooth', 0.045);
+      spark(e); tick(); schedule();
+      return;
+    }
+
+    if (tool.indexOf('sello:') === 0){
+      stamp(tool.slice(6), c.x, c.y);
+      blip(740, 0.08); setTimeout(function(){ blip(988, 0.09); }, 60);
+      spark(e); tick(); schedule();
+      return;
+    }
+
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){ /* nada */ }
+    drawing = true;
+    lastCell = c;
+    paintCell(c.x, c.y);
+    spark(e); tick(); schedule();
+  });
+
+  cv.addEventListener('pointermove', function(e){
+    hover = (e.pointerType === 'touch') ? null : cellAt(e);
+    if (drawing){
+      var c = cellAt(e);
+      if (!lastCell || lastCell.x !== c.x || lastCell.y !== c.y){
+        lineTo(lastCell || c, c);
+        lastCell = c;
+        spark(e); tick();
+      }
+    }
+    schedule();
+  });
+
+  function endStroke(){
+    if (!drawing) return;
+    drawing = false; lastCell = null;
+    schedule();
+  }
+  cv.addEventListener('pointerup', endStroke);
+  cv.addEventListener('pointercancel', endStroke);
+  window.addEventListener('pointerup', endStroke);
+  cv.addEventListener('pointerleave', function(){ hover = null; schedule(); });
+  cv.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  /* ---------- botones ---------- */
+  document.querySelectorAll('[data-tool]').forEach(function(b){
+    b.addEventListener('click', function(){
+      tool = b.dataset.tool;
+      syncTools();
+      blip(tool === 'borrador' ? 380 : 620, 0.05);
+    });
+  });
+
+  document.querySelectorAll('[data-size]').forEach(function(b){
+    b.addEventListener('click', function(){
+      size = Number(b.dataset.size);
+      syncSizes();
+      blip(440 + size * 90, 0.05);
+    });
+  });
+
+  document.getElementById('btnMirror').addEventListener('click', function(){
+    mirror = !mirror;
+    this.setAttribute('aria-pressed', String(mirror));
+    hud(mirror ? 'SIMETRÍA ENCENDIDA' : 'SIMETRÍA APAGADA', 1800);
+    blip(mirror ? 700 : 500, 0.07);
+    schedule();
+  });
+
+  document.getElementById('btnGrid').addEventListener('click', function(){
+    showGrid = !showGrid;
+    this.setAttribute('aria-pressed', String(showGrid));
+    blip(560, 0.05);
+    schedule();
+  });
+
+  document.getElementById('btnSound').addEventListener('click', function(){
+    sound = !sound;
+    this.setAttribute('aria-pressed', String(sound));
+    if (sound) blip(880, 0.09);
+    hud(sound ? 'SONIDO ENCENDIDO' : 'SONIDO APAGADO', 1500);
+  });
+
+  function undo(){
+    if (!undoStack.length){ hud('NO HAY NADA QUE DESHACER', 1500); return; }
+    redoStack.push(grid.slice());
+    grid = undoStack.pop();
+    blip(420, 0.06, 'triangle');
+    schedule();
+  }
+  function redo(){
+    if (!redoStack.length){ hud('NO HAY NADA QUE REHACER', 1500); return; }
+    undoStack.push(grid.slice());
+    grid = redoStack.pop();
+    blip(640, 0.06, 'triangle');
+    schedule();
+  }
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnRedo').addEventListener('click', redo);
+
+  btnClear.addEventListener('click', function(){
+    if (!clearArmed){
+      clearArmed = true;
+      btnClear.textContent = '¿Seguro?';
+      btnClear.classList.add('warn');
+      hud('TOCA DE NUEVO PARA BORRAR TODO', 3000);
+      blip(300, 0.08);
+      clearTimer = setTimeout(disarm, 3200);
+      return;
+    }
+    disarm();
+    pushUndo();
+    grid = new Array(GW * GH).fill(null);
+    chord([880, 660, 494]);
+    hud('LIENZO EN BLANCO', 1800);
+    schedule();
+  });
+  function disarm(){
+    if (clearTimer) clearTimeout(clearTimer);
+    clearArmed = false;
+    btnClear.textContent = 'Limpiar';
+    btnClear.classList.remove('warn');
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (!(e.ctrlKey || e.metaKey)) return;
+    var k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
+  });
+
+  /* ---------- guardar ---------- */
+  function exportPNG(){
+    var S = 20;
+    var out = document.createElement('canvas');
+    out.width = GW * S; out.height = GH * S;
+    var o = out.getContext('2d');
+    o.fillStyle = PAPER;
+    o.fillRect(0, 0, out.width, out.height);
+    for (var y = 0; y < GH; y++){
+      for (var x = 0; x < GW; x++){
+        var c = grid[idx(x, y)];
+        if (!c) continue;
+        o.fillStyle = c;
+        o.fillRect(x * S, y * S, S, S);
+      }
+    }
+    return out;
+  }
+
+  if (window.claude && typeof window.claude.use === 'function'){
+    window.claude.use('downloads').then(function(dl){
+      if (!dl) return;
+      btnSave.hidden = false;
+      btnSave.addEventListener('click', function(){
+        btnSave.disabled = true;
+        hud('PREPARANDO…');
+        exportPNG().toBlob(function(blob){
+          if (!blob){ btnSave.disabled = false; hud('NO SE PUDO GUARDAR', 2500); return; }
+          dl.save({ filename: 'dibujo-consola-del-corazon.png', data: blob }).then(function(){
+            hud('GUARDADO ♥', 2500);
+            chord([660, 880, 1046], 80);
+          }).catch(function(err){
+            hud(err && err.code === 'declined' ? 'GUARDADO CANCELADO' : 'NO SE PUDO GUARDAR', 2500);
+          }).then(function(){ btnSave.disabled = false; });
+        }, 'image/png');
+      });
+    }).catch(function(){ /* sin descargas */ });
+  }
+
+  /* ---------- arranque ---------- */
+  window.addEventListener('resize', resize);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize).catch(function(){});
+  syncTools(); syncSizes(); syncSwatches(); tick(); resize();
+  setTimeout(resize, 120);
+})();
+</script>
+</body>
+</html>

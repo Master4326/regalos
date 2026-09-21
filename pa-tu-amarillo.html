@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>For You</title>
+<meta name="theme-color" content="#060913">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ==========================================================================
+     "Para ti" · lámina de lirios de oro sobre índigo de medianoche
+     El ramo NO se toca: el SVG y su animación son los mismos de siempre.
+     Lo que cambia es lo que lo rodea — el papel, el oro,quyyyyyyyyy la luz y la letra.
+     Regla de la casa: nada parpadea. Lo que se mueve, se mueve en decenas de
+     segundos, y las duraciones son primas entre sí (19 · 29 · 31 · 37 · 41 ·
+     47 · 53) para que las capas no vuelvan a coincidir nunca.
+     ========================================================================== */
+  :root{
+    /* la lámina ya no es papel: es índigo de medianoche. Más claro arriba,
+       donde da la luz, y casi negro en los cantos. */
+    --papel:#243566;
+    --papel-medio:#1b2749;
+    --papel-borde:#121a33;
+    --papel-canto:#0b1124;
+    --scrim:13,19,42;
+    /* letra nácar y oro pálido: sobre azul hondo el oro tiene que subir de
+       brillo, si no se apaga. El amarillo de la flor es quien manda. */
+    --tinta:#eae7f4;
+    --tinta-suave:#b9bad5;
+    --oro:#e6c98a;
+    --rosa:#e08aa4;
+    /* el pan de oro del filete: no es un color, es un reflejo */
+    --gilt:linear-gradient(115deg,
+      #8e6c39 0%, #caa45e 12%, #f3e0b0 24%, #fff8e4 30%, #d9b06a 42%,
+      #8d6a36 56%, #e3c68a 70%, #fdf3d6 78%, #c49a54 90%, #8a6530 100%);
+    --curva:cubic-bezier(.34,1.56,.64,1);   /* la curva de la casa */
+    --cine:cubic-bezier(.16,1,.3,1);        /* entra rápido, frena largo */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#03050c}
+  body{
+    font-family:"Cormorant Garamond",Cormorant,Garamond,"Times New Roman",Georgia,serif;
+    min-height:100dvh;
+    display:grid;place-items:center;position:relative;
+    background:radial-gradient(135% 105% at 50% -12%,
+      #141c38 0%, #0d1326 34%, #070b18 66%, #03050c 100%);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  /* ----- dos luces que derivan: una tibia, la del ramo; otra de luna ----- */
+  body::before,body::after{
+    content:"";position:fixed;left:50%;top:50%;border-radius:50%;
+    pointer-events:none;z-index:0;filter:blur(18px);
+  }
+  body::before{
+    width:min(96vw,780px);height:min(94vh,920px);
+    background:radial-gradient(closest-side,
+      rgba(226,176,96,.20), rgba(108,130,215,.08) 58%, transparent 76%);
+    animation:lampara 41s ease-in-out infinite;
+  }
+  body::after{
+    width:min(74vw,540px);height:min(62vh,560px);
+    background:radial-gradient(closest-side, rgba(124,150,240,.13), transparent 74%);
+    animation:lampara2 53s ease-in-out infinite;
+  }
+  @keyframes lampara{
+    0%,100%{transform:translate(-50%,-50%) scale(1)}
+    50%    {transform:translate(-47.5%,-52%) scale(1.07)}
+  }
+  @keyframes lampara2{
+    0%,100%{transform:translate(-66%,-80%) scale(1)}
+    50%    {transform:translate(-58%,-90%) scale(1.14)}
+  }
+
+  /* ---------------------------- la lámina ---------------------------- */
+  .escena{
+    position:relative;z-index:1;
+    perspective:1600px;
+    animation:llegar 1.9s var(--cine) both;
+  }
+  @keyframes llegar{
+    from{opacity:0;transform:translateY(22px) scale(.982)}
+    to  {opacity:1;transform:none}
+  }
+  .marco{
+    position:relative;
+    width:min(93vw,436px);
+    height:min(95dvh,752px);
+    border-radius:11px;
+    overflow:hidden;
+    isolation:isolate;
+    transition:transform .5s var(--cine);
+    will-change:transform;
+    background:radial-gradient(128% 96% at 50% 8%,
+      var(--papel) 0%, var(--papel-medio) 46%, var(--papel-borde) 87%, var(--papel-canto) 100%);
+    box-shadow:
+      0 1px 2px rgba(0,0,0,.55),
+      0 12px 28px -12px rgba(0,0,0,.66),
+      0 52px 104px -32px rgba(0,0,0,.86),
+      0 0 0 1px rgba(214,174,106,.34),
+      0 0 62px -10px rgba(226,178,92,.22),
+      inset 0 1px 0 rgba(198,214,255,.16),
+      inset 0 -70px 100px -70px rgba(0,0,0,.65);
+  }
+  /* la trama de la seda: dos hilos finísimos, ahora en luz y no en sombra */
+  .papel{
+    position:absolute;inset:0;z-index:1;pointer-events:none;
+    mix-blend-mode:overlay;opacity:.55;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(196,214,255,.055) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(0deg,  rgba(196,214,255,.032) 0 1px, transparent 1px 7px);
+  }
+  /* el aire tibio en el que flota el ramo. Sobre azul hay que dárselo:
+     sin esto las flores quedan recortadas y frías. */
+  .halo{
+    position:absolute;left:50%;top:40%;width:92%;height:64%;z-index:1;
+    transform:translate(-50%,-50%);pointer-events:none;
+    background:radial-gradient(closest-side,
+      rgba(246,206,118,.12), rgba(226,170,80,.055) 52%, transparent 78%);
+    filter:blur(6px);
+    animation:respiraHalo 29s ease-in-out infinite;
+  }
+  @keyframes respiraHalo{
+    0%,100%{opacity:.72;transform:translate(-50%,-50%) scale(1)}
+    50%    {opacity:.92; transform:translate(-50%,-50%) scale(1.05)}
+  }
+  /* la luz que entra por arriba a la izquierda, y que va cambiando de sitio */
+  .luz{
+    position:absolute;inset:-12%;z-index:3;pointer-events:none;
+    mix-blend-mode:screen;
+    background:radial-gradient(36% 26% at 27% 13%,
+      rgba(255,240,200,.26), rgba(186,178,255,.10) 46%, transparent 74%);
+    animation:derivaLuz 47s ease-in-out infinite;
+  }
+  @keyframes derivaLuz{
+    0%,100%{transform:translate3d(0,0,0)}
+    50%    {transform:translate3d(6%,4.5%,0)}
+  }
+  /* viñeta: los cantos de la lámina siempre pesan un poco más */
+  .marco::after{
+    content:"";position:absolute;inset:0;z-index:6;pointer-events:none;
+    background:radial-gradient(118% 88% at 50% 36%,
+      transparent 48%, rgba(3,6,16,.24) 78%, rgba(2,4,11,.52) 100%);
+  }
+
+  /* -------- doble filete de pan de oro + una luz que lo recorre -------- */
+  .filete,.filete-2,.brillo-oro{
+    position:absolute;z-index:5;pointer-events:none;border-radius:6px;
+  }
+  .filete{inset:13px;border:1px solid rgba(181,141,88,.48)}
+  .filete-2{inset:19px;border:1px solid rgba(181,141,88,.22);border-radius:4px}
+  .brillo-oro{display:none}
+  /* si el navegador sabe recortar máscaras, el filete deja de ser un borde
+     plano y pasa a ser un anillo de oro de verdad, con su reflejo andando.
+     Si no las sabe, se queda el borde de antes: nunca desaparece el marco. */
+  @supports ((-webkit-mask-composite:xor) or (mask-composite:exclude)){
+    .filete,.filete-2,.brillo-oro{
+      border:0;padding:1px;background:var(--gilt);
+      -webkit-mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+      -webkit-mask-clip:content-box,border-box;
+      -webkit-mask-composite:xor;
+              mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+              mask-clip:content-box,border-box;
+              mask-composite:exclude;
+    }
+    .filete-2{opacity:.62}
+    .brillo-oro{
+      display:block;inset:13px;opacity:.7;
+      background-image:linear-gradient(104deg,
+        transparent 41%, rgba(255,250,232,.30) 47%, rgba(255,253,246,.95) 50%,
+        rgba(255,250,232,.30) 53%, transparent 59%);
+      background-size:300% 100%;background-repeat:no-repeat;
+      animation:pasarLuz 37s linear infinite;
+    }
+  }
+  @keyframes pasarLuz{
+    from{background-position:-130% 0}
+    to  {background-position: 230% 0}
+  }
+
+  /* esquineros: un brote de oro en cada esquina. Quietos y tenues: son
+     decoración de fondo, no algo que pida atención. */
+  .esq{
+    position:absolute;width:23px;height:23px;z-index:5;
+    pointer-events:none;color:var(--oro);opacity:.72;
+  }
+  .e1{top:21px;left:21px}
+  .e2{top:21px;right:21px;transform:rotate(90deg)}
+  .e3{bottom:21px;right:21px;transform:rotate(180deg)}
+  .e4{bottom:21px;left:21px;transform:rotate(270deg)}
+
+  /* el ramo respira: 1,2 % en 19 s, lo justo para que no parezca impreso */
+  svg.lienzo{
+    position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2;
+    transform-origin:50% 92%;
+    animation:respirar 19s ease-in-out infinite;
+  }
+  @keyframes respirar{
+    0%,100%{transform:scale(1)}
+    50%    {transform:scale(1.012)}
+  }
+
+  /* ---------------------- pétalos que caen ---------------------- */
+  .petalo{position:absolute;top:-12%;z-index:4;pointer-events:none;
+          animation:caer linear infinite;will-change:transform}
+  .petalo i{display:block;width:100%;height:100%;border-radius:76% 5% 70% 8%;
+            animation:derivar ease-in-out infinite alternate;
+            box-shadow:inset 0 0 5px rgba(255,238,190,.40);
+            filter:drop-shadow(0 0 4px rgba(250,216,130,.32))}
+  @keyframes caer{
+    0%{transform:translate3d(0,0,0);opacity:0}
+    7%{opacity:var(--o,.7)}
+    88%{opacity:var(--o,.7)}
+    100%{transform:translate3d(0,var(--h,760px),0);opacity:0}
+  }
+  @keyframes derivar{
+    from{transform:translateX(-17px) rotate3d(1,.45,.2,-34deg) scaleX(1)}
+    to  {transform:translateX(17px)  rotate3d(1,.45,.2,306deg) scaleX(.38)}
+  }
+  /* tres hondos: los de atrás van desenfocados y más lentos */
+  .petalo.medio{filter:blur(.7px);opacity:.92}
+  .petalo.lejos{filter:blur(1.5px)}
+
+  /* ---------------------- polvo de oro ---------------------- */
+  .polvo{
+    position:absolute;z-index:4;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle,#fff7d8 0%, #f0c95e 50%, rgba(240,201,94,0) 74%);
+    opacity:0;animation:flotar ease-in-out infinite;will-change:transform
+  }
+  @keyframes flotar{
+    0%{opacity:0;transform:translate3d(0,0,0)}
+    28%{opacity:.85}
+    72%{opacity:.42}
+    100%{opacity:0;transform:translate3d(18px,-56px,0)}
+  }
+
+  /* ------------------------- la cartela ------------------------- */
+  .texto{
+    position:absolute;left:0;right:0;bottom:0;z-index:7;
+    padding:104px 30px calc(32px + env(safe-area-inset-bottom,0px));
+    text-align:center;
+  }
+  /* el velo va aparte: así puede difuminar lo que pasa por detrás y
+     apagarse hacia arriba sin llevarse la letra con él */
+  .texto::before{
+    content:"";position:absolute;inset:0;z-index:-1;
+    background:linear-gradient(to top,
+      rgba(var(--scrim),.985) 26%,
+      rgba(var(--scrim),.93)  48%,
+      rgba(var(--scrim),.58)  72%,
+      rgba(var(--scrim),0)    100%);
+    -webkit-backdrop-filter:blur(3px) saturate(1.05);
+            backdrop-filter:blur(3px) saturate(1.05);
+    -webkit-mask-image:linear-gradient(to top,#000 52%,rgba(0,0,0,.45) 78%,transparent 97%);
+            mask-image:linear-gradient(to top,#000 52%,rgba(0,0,0,.45) 78%,transparent 97%);
+  }
+  /* pie de lámina botánica, en versalitas */
+  .ante{
+    font-family:"Cormorant SC","Cormorant Garamond",Garamond,Georgia,serif;
+    font-size:.72rem;font-weight:500;letter-spacing:.32em;text-indent:.32em;
+    color:#d9bd83;text-shadow:0 1px 3px rgba(0,0,0,.55);opacity:0;
+    animation:surge 1.6s var(--cine) 4.9s forwards;
+  }
+  /* filete corto con su flor, encima del título */
+  .regla{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    margin:9px auto 4px;max-width:188px;
+    opacity:0;animation:surge 1.6s var(--cine) 5.05s forwards;
+  }
+  .regla span{flex:1;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(232,205,146,.9),transparent)}
+  .regla .flor{width:15px;height:15px;color:var(--oro);flex:none;
+    filter:drop-shadow(0 0 7px rgba(232,205,146,.45))}
+  .texto h1{
+    font-size:clamp(2.45rem,9.6vw,3.05rem);font-weight:400;font-style:italic;
+    line-height:1.04;letter-spacing:.005em;margin-top:2px;
+    /* tinta sepia con una veta de oro que la cruza muy despacio */
+    background-image:linear-gradient(100deg,
+      var(--tinta) 0%, var(--tinta) 33%, #d9be8b 44%, #fdf1cf 50%, #d9be8b 56%,
+      var(--tinta) 67%, var(--tinta) 100%);
+    background-size:300% 100%;background-position:150% 0;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 2px 7px rgba(0,0,0,.6)) drop-shadow(0 0 20px rgba(226,196,130,.17));
+    opacity:0;
+    animation:surge 1.8s var(--cine) 5.3s forwards,
+              vetaOro 31s linear 7.6s infinite;
+  }
+  @keyframes vetaOro{from{background-position:150% 0}to{background-position:-50% 0}}
+  .texto p{
+    font-size:clamp(1.04rem,4.2vw,1.16rem);font-style:italic;font-weight:300;
+    color:var(--tinta-suave);line-height:1.58;max-width:25ch;margin:11px auto 0;
+    text-wrap:balance;
+    opacity:0;animation:surge 1.8s var(--cine) 6s forwards;
+  }
+  .firma{
+    display:block;margin-top:17px;
+    font-family:"Cormorant SC","Cormorant Garamond",Garamond,Georgia,serif;
+    font-size:.86rem;font-weight:400;letter-spacing:.2em;text-indent:.2em;
+    color:#c3a97a;
+    opacity:0;animation:surge 1.6s var(--cine) 6.55s forwards;
+  }
+  @keyframes surge{
+    from{opacity:0;transform:translateY(13px)}
+    to  {opacity:1;transform:translateY(0)}
+  }
+  .corazon{color:var(--rosa);display:inline-block;font-size:.95em;margin-left:.2em;
+           animation:late 2.6s cubic-bezier(.4,0,.3,1) infinite}
+  @keyframes late{0%,72%,100%{transform:scale(1)}80%{transform:scale(1.28)}88%{transform:scale(1.06)}}
+
+  /* ------------------ lo que deja el dedo al tocar ------------------ */
+  .toque{
+    position:absolute;z-index:8;pointer-events:none;border-radius:50%;
+    transform:translate(-50%,-50%) scale(.2);
+    background:radial-gradient(circle, rgba(255,240,200,.55), rgba(240,201,94,.14) 55%, transparent 72%);
+    transition:transform 1.1s var(--cine), opacity 1.1s ease-out;
+  }
+  .chispa{
+    position:absolute;z-index:9;pointer-events:none;border-radius:50%;
+    background:radial-gradient(circle,#fff8dd 0%, #f0c95e 55%, rgba(240,201,94,0) 76%);
+    transform:translate(-50%,-50%);
+    transition:transform 1.25s var(--cine), opacity 1.25s ease-out;
+  }
+  .late{
+    position:absolute;z-index:9;pointer-events:none;color:var(--rosa);
+    transform:translate(-50%,-50%) scale(.6);opacity:0;
+    text-shadow:0 0 12px rgba(224,138,164,.5);
+    transition:transform 1.7s cubic-bezier(.2,.7,.3,1), opacity 1.7s ease-out;
+  }
+
+  /* ---------- animaciones del jardín (las del ramo, sin tocar) ---------- */
+  @keyframes dibujar{to{stroke-dashoffset:0}}
+
+  .abre{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:abrir 1.05s cubic-bezier(.22,.92,.26,1) backwards;
+    animation-delay:var(--d);
+  }
+  @keyframes abrir{
+    0%{transform:scale(.10) rotate(var(--r,14deg));opacity:0}
+    30%{opacity:1}
+    72%{transform:scale(1.05) rotate(0deg)}
+    100%{transform:scale(1) rotate(0);opacity:1}
+  }
+  .nucleo{
+    transform-box:fill-box;transform-origin:50% 42%;
+    animation:aparecer .85s cubic-bezier(.3,1.3,.5,1) backwards;animation-delay:var(--d);
+  }
+  @keyframes aparecer{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .brillo{
+    transform-box:fill-box;transform-origin:center;
+    animation:aparecer 1.3s ease backwards;animation-delay:var(--d);
+  }
+  .brota{
+    transform-box:fill-box;transform-origin:50% 100%;
+    animation:brotar 1.25s cubic-bezier(.3,.9,.3,1) backwards;animation-delay:var(--d);
+  }
+  @keyframes brotar{
+    0%{transform:scaleY(.04) scaleX(.42);opacity:0}
+    35%{opacity:1}
+    100%{transform:scale(1);opacity:1}
+  }
+
+  .sway{transform-box:view-box;transform-origin:200px 604px;
+        animation:mecer var(--sd,8s) ease-in-out infinite;animation-delay:var(--sp,0s)}
+  @keyframes mecer{0%,100%{transform:rotate(-.85deg)}50%{transform:rotate(1.05deg)}}
+  .nod{transform-box:fill-box;transform-origin:50% 78%;
+       animation:asentir var(--nd,7s) ease-in-out infinite;animation-delay:var(--np,0s)}
+  @keyframes asentir{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+
+  /* en pantalla grande la lámina puede permitirse ser un poco mayor */
+  @media (min-width:900px) and (min-height:860px){
+    .marco{width:min(46vw,470px);height:min(92dvh,812px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001s!important;animation-delay:0s!important;
+      animation-iteration-count:1!important;transition-duration:.001s!important}
+  }
+</style>
+</head>
+<body>
+ <div class="escena">
+  <div class="marco" id="marco">
+    <div class="papel"></div>
+    <div class="halo"></div>
+    <svg class="lienzo" id="lienzo" viewBox="0 0 400 690" preserveAspectRatio="xMidYMid slice" aria-label="Ramo de lirios amarillos">
+      <defs>
+        <!-- tépalos exteriores · oro (base verdosa, como el lirio) -->
+        <linearGradient id="tepA" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#e6eeb2"/>
+          <stop offset="20%"  stop-color="#fce9a8"/>
+          <stop offset="58%"  stop-color="#f8d468"/>
+          <stop offset="100%" stop-color="#f2bd32"/>
+        </linearGradient>
+        <!-- tépalos interiores · oro, con garganta ámbar -->
+        <linearGradient id="tepB" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#f0ad2a"/>
+          <stop offset="16%"  stop-color="#f9dc8c"/>
+          <stop offset="42%"  stop-color="#fbe49a"/>
+          <stop offset="100%" stop-color="#f3c23c"/>
+        </linearGradient>
+        <!-- tépalos exteriores · ámbar -->
+        <linearGradient id="tepC" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#e8edb8"/>
+          <stop offset="22%"  stop-color="#fad48d"/>
+          <stop offset="60%"  stop-color="#f4c059"/>
+          <stop offset="100%" stop-color="#e79f22"/>
+        </linearGradient>
+        <!-- tépalos interiores · ámbar -->
+        <linearGradient id="tepD" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#e9a11e"/>
+          <stop offset="16%"  stop-color="#f8d178"/>
+          <stop offset="44%"  stop-color="#fadc95"/>
+          <stop offset="100%" stop-color="#eaa92c"/>
+        </linearGradient>
+
+        <radialGradient id="gHalo">
+          <stop offset="38%"  stop-color="#f0c85e" stop-opacity=".50"/>
+          <stop offset="100%" stop-color="#f0c85e" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gHalo2">
+          <stop offset="38%"  stop-color="#edb64a" stop-opacity=".46"/>
+          <stop offset="100%" stop-color="#edb64a" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="gGarganta" cx="50%" cy="42%" r="62%">
+          <stop offset="0%"   stop-color="#f6f3c4"/>
+          <stop offset="55%"  stop-color="#f2bb3a"/>
+          <stop offset="100%" stop-color="#c98e1c" stop-opacity=".55"/>
+        </radialGradient>
+
+        <linearGradient id="gTallo" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#2e5030"/>
+          <stop offset="55%"  stop-color="#4c7442"/>
+          <stop offset="100%" stop-color="#6f9a58"/>
+        </linearGradient>
+        <linearGradient id="gHoja" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#22432a"/>
+          <stop offset="45%"  stop-color="#3f6f3c"/>
+          <stop offset="100%" stop-color="#76a259"/>
+        </linearGradient>
+        <linearGradient id="gCapullo" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#4c7738"/>
+          <stop offset="38%"  stop-color="#7da054"/>
+          <stop offset="72%"  stop-color="#c6c87e"/>
+          <stop offset="100%" stop-color="#f0d063"/>
+        </linearGradient>
+        <!-- anteras cargadas de polen -->
+        <linearGradient id="gAntera" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#d98b32"/>
+          <stop offset="52%"  stop-color="#b8601f"/>
+          <stop offset="100%" stop-color="#8a3f16"/>
+        </linearGradient>
+
+        <!-- volumen del tépalo: sombra en la base, filo encendido -->
+        <linearGradient id="sombraTep" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%"   stop-color="#9c6216" stop-opacity=".46"/>
+          <stop offset="24%"  stop-color="#c2851f" stop-opacity=".17"/>
+          <stop offset="62%"  stop-color="#ffffff" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#fff6dc" stop-opacity=".15"/>
+        </linearGradient>
+        <!-- luz que entra por la izquierda -->
+        <linearGradient id="ladoLuz" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#fffbe8" stop-opacity=".16"/>
+          <stop offset="40%"  stop-color="#ffffff" stop-opacity=".04"/>
+          <stop offset="100%" stop-color="#8a5a12" stop-opacity=".20"/>
+        </linearGradient>
+        <!-- hondura de la garganta, bajo los tépalos internos -->
+        <radialGradient id="corazonSombra">
+          <stop offset="0%"   stop-color="#82520f" stop-opacity=".40"/>
+          <stop offset="52%"  stop-color="#a87422" stop-opacity=".15"/>
+          <stop offset="100%" stop-color="#a87422" stop-opacity="0"/>
+        </radialGradient>
+        <!-- la estrella verde-oro del centro -->
+        <radialGradient id="estrella">
+          <stop offset="0%"   stop-color="#f2f5c2"/>
+          <stop offset="38%"  stop-color="#e2ca52"/>
+          <stop offset="76%"  stop-color="#c4901c" stop-opacity=".88"/>
+          <stop offset="100%" stop-color="#b5811a" stop-opacity="0"/>
+        </radialGradient>
+        <!-- el aire tibio en el que flota el ramo -->
+        <radialGradient id="auraRamo">
+          <stop offset="0%"   stop-color="#f7dc92" stop-opacity=".32"/>
+          <stop offset="54%"  stop-color="#f0cf7e" stop-opacity=".19"/>
+          <stop offset="100%" stop-color="#eec97a" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="lejos" x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur stdDeviation="1.0"/>
+        </filter>
+        <filter id="suave" x="-35%" y="-35%" width="170%" height="170%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4.5" flood-color="#8a5a4a" flood-opacity="0.22"/>
+        </filter>
+        <filter id="grano">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/>
+          <feColorMatrix type="saturate" values="0"/>
+        </filter>
+      </defs>
+
+      <ellipse cx="200" cy="288" rx="198" ry="254" fill="url(#auraRamo)"/>
+      <g id="jardin"></g>
+      <rect width="400" height="690" filter="url(#grano)" opacity=".07"
+            style="mix-blend-mode:overlay" pointer-events="none"/>
+    </svg>
+
+    <div class="luz"></div>
+
+    <div class="filete"></div><div class="filete-2"></div><div class="brillo-oro"></div>
+
+    <!-- esquineros: un brote de oro que nace de cada esquina -->
+    <svg class="esq e1" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M1.5 1.5q6 .6 9.6 9.6" fill="none" stroke="currentColor"
+            stroke-width=".9" stroke-linecap="round" opacity=".75"/>
+      <path d="M4 2.6q5.2.4 7 3.6-4.6.9-7-3.6z" fill="currentColor" opacity=".45"/>
+      <path d="M2.6 4q.4 5.2 3.6 7-.9-4.6-3.6-7z" fill="currentColor" opacity=".45"/>
+      <circle cx="11.7" cy="11.7" r="1.2" fill="currentColor" opacity=".7"/>
+    </svg>
+    <svg class="esq e2" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M1.5 1.5q6 .6 9.6 9.6" fill="none" stroke="currentColor"
+            stroke-width=".9" stroke-linecap="round" opacity=".75"/>
+      <path d="M4 2.6q5.2.4 7 3.6-4.6.9-7-3.6z" fill="currentColor" opacity=".45"/>
+      <path d="M2.6 4q.4 5.2 3.6 7-.9-4.6-3.6-7z" fill="currentColor" opacity=".45"/>
+      <circle cx="11.7" cy="11.7" r="1.2" fill="currentColor" opacity=".7"/>
+    </svg>
+    <svg class="esq e3" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M1.5 1.5q6 .6 9.6 9.6" fill="none" stroke="currentColor"
+            stroke-width=".9" stroke-linecap="round" opacity=".75"/>
+      <path d="M4 2.6q5.2.4 7 3.6-4.6.9-7-3.6z" fill="currentColor" opacity=".45"/>
+      <path d="M2.6 4q.4 5.2 3.6 7-.9-4.6-3.6-7z" fill="currentColor" opacity=".45"/>
+      <circle cx="11.7" cy="11.7" r="1.2" fill="currentColor" opacity=".7"/>
+    </svg>
+    <svg class="esq e4" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M1.5 1.5q6 .6 9.6 9.6" fill="none" stroke="currentColor"
+            stroke-width=".9" stroke-linecap="round" opacity=".75"/>
+      <path d="M4 2.6q5.2.4 7 3.6-4.6.9-7-3.6z" fill="currentColor" opacity=".45"/>
+      <path d="M2.6 4q.4 5.2 3.6 7-.9-4.6-3.6-7z" fill="currentColor" opacity=".45"/>
+      <circle cx="11.7" cy="11.7" r="1.2" fill="currentColor" opacity=".7"/>
+    </svg>
+
+    <div class="texto">
+      <div class="ante">Lilium &middot; lirios de oro</div>
+      <div class="regla">
+        <span></span>
+        <svg class="flor" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 1.4Q13.1 9 22.6 12 13.1 15 12 22.6 10.9 15 1.4 12 10.9 9 12 1.4Z"
+                fill="currentColor"/>
+        </svg>
+        <span></span>
+      </div>
+      <h1>Para ti</h1>
+      <p>lo hice con el amor del alma y de la luna</p>
+      <span class="firma">Con todo mi <span class="corazon">&#10084;</span></span>
+    </div>
+  </div>
+ </div>
+
+<script>
+/* ===================== utilidades ===================== */
+const rnd = (a,b) => a + Math.random()*(b-a);
+const n   = v => Number(v.toFixed(1));
+
+/* ===================== formas ===================== */
+/* Tépalo de lirio: ancho en el medio, cuello estrecho y un ápice
+   carnoso que se vuelve hacia atrás. */
+function tepalo(len,w){
+  return 'M0 0'
+   + ' C ' + n(-w*.38) + ' ' + n(-len*.13) + ', ' + n(-w*1.02) + ' ' + n(-len*.33) + ', ' + n(-w*1.00) + ' ' + n(-len*.58)
+   + ' C ' + n(-w*.98) + ' ' + n(-len*.74) + ', ' + n(-w*.50) + ' ' + n(-len*.78) + ', ' + n(-w*.34) + ' ' + n(-len*.88)
+   + ' C ' + n(-w*.20) + ' ' + n(-len*.96) + ', ' + n(-w*.12) + ' ' + n(-len*1.02) + ', 0 ' + n(-len)
+   + ' C ' + n(w*.12)  + ' ' + n(-len*1.02) + ', ' + n(w*.20)  + ' ' + n(-len*.96) + ', ' + n(w*.34) + ' ' + n(-len*.88)
+   + ' C ' + n(w*.50)  + ' ' + n(-len*.78) + ', ' + n(w*.98)   + ' ' + n(-len*.74) + ', ' + n(w*1.00) + ' ' + n(-len*.58)
+   + ' C ' + n(w*1.02) + ' ' + n(-len*.33) + ', ' + n(w*.38)   + ' ' + n(-len*.13) + ', 0 0 Z';
+}
+
+/* El rizo del ápice: el lirio dobla la punta hacia atrás y enseña el envés. */
+function rizo(len,w,color){
+  return '<path d="M ' + n(-w*.30) + ' ' + n(-len*.90)
+   + ' Q 0 ' + n(-len*1.04) + ' ' + n(w*.30) + ' ' + n(-len*.90)
+   + ' Q 0 ' + n(-len*.955) + ' ' + n(-w*.30) + ' ' + n(-len*.90) + ' Z"'
+   + ' fill="' + color + '" opacity=".62"/>';
+}
+
+/* El surco nectarífero que baja por el centro del tépalo. */
+function nectario(len,w,color){
+  return '<path d="M0 ' + n(-len*.07) + ' Q ' + n(w*.06) + ' ' + n(-len*.40) + ' 0 ' + n(-len*.80) + '"'
+   + ' fill="none" stroke="' + color + '" stroke-width="' + n(Math.max(.55,w*.06)) + '"'
+   + ' stroke-linecap="round" opacity=".40"/>';
+}
+
+/* Motas granate: las pecas del lirio, apretadas cerca de la garganta. */
+function motas(len,w,color,k){
+  let s='', N=16;
+  for(let i=0;i<N;i++){
+    const v = rnd(.12,.52);
+    const t = rnd(-1,1);
+    const x = n(t*w*(1-v*.5)*.76);
+    const y = n(-len*v);
+    const r = n(Math.max(.45, w*rnd(.042,.078)));
+    s += '<ellipse cx="'+x+'" cy="'+y+'" rx="'+r+'" ry="'+n(r*rnd(1.2,1.9))+'"'
+       + ' transform="rotate('+n(rnd(-25,25))+' '+x+' '+y+')"'
+       + ' fill="'+color+'" opacity="'+(.58*k*rnd(.7,1.1)).toFixed(2)+'"/>';
+  }
+  return s;
+}
+
+/* Media luna clara pegada al filo que da la luz: es lo que le da bulto. */
+function filo(len,w){
+  return '<path d="M ' + n(-w*.88) + ' ' + n(-len*.48)
+   + ' C ' + n(-w*.94) + ' ' + n(-len*.70) + ', ' + n(-w*.54) + ' ' + n(-len*.84) + ', ' + n(-w*.28) + ' ' + n(-len*.91)
+   + ' C ' + n(-w*.56) + ' ' + n(-len*.79) + ', ' + n(-w*.78) + ' ' + n(-len*.64) + ', ' + n(-w*.88) + ' ' + n(-len*.48) + ' Z"'
+   + ' fill="#fff8e2" opacity=".18"/>';
+}
+
+/* Un tépalo entero: color, sombra en la base, luz de lado, pecas y filo. */
+function tepaloPintado(len,w,pal,dentro){
+  const d = tepalo(len,w);
+  return '<path d="'+d+'" fill="url(#'+(dentro?pal.in:pal.out)+')"/>'
+   + '<path d="'+d+'" fill="url(#sombraTep)"/>'
+   + '<path d="'+d+'" fill="url(#ladoLuz)"/>'
+   + nectario(len,w,pal.vena)
+   + motas(len,w,pal.mota,dentro?1:.72)
+   + filo(len,w)
+   + rizo(len,w,pal.rizo)
+   + '<path d="'+d+'" fill="none" stroke="'+pal.borde+'" stroke-opacity=".42" stroke-width=".55"/>';
+}
+
+/* Los seis surcos que convergen en la garganta. */
+function surcos(R,color){
+  let s='';
+  for(let a=0;a<360;a+=60){
+    s += '<path transform="rotate('+a+')" d="M0 '+n(-R*.08)+' L0 '+n(-R*.32)+'"'
+       + ' stroke="'+color+'" stroke-width="'+n(Math.max(.5,R*.028))+'"'
+       + ' stroke-linecap="round" opacity=".45"/>';
+  }
+  return s;
+}
+
+/* Seis estambres largos con anteras cargadas de polen, y el pistilo delante. */
+function estambres(R){
+  let s='';
+  for(let k=0;k<6;k++){
+    const t  = (k-2.5)/2.5;
+    const fx = n(t*R*.54), fy = n(R*.63 - Math.abs(t)*R*.07);
+    const ang = n(Math.atan2(fy,fx)*180/Math.PI);
+    s += '<path d="M0 '+n(-R*.04)+' Q '+n(t*R*.17)+' '+n(R*.30)+' '+fx+' '+fy+'"'
+       + ' fill="none" stroke="#d8c184" stroke-width="'+n(Math.max(.65,R*.032))+'"'
+       + ' stroke-linecap="round" opacity=".95"/>';
+    s += '<g transform="translate('+fx+' '+fy+') rotate('+ang+')">'
+       + '<ellipse rx="'+n(R*.145)+'" ry="'+n(R*.052)+'" fill="url(#gAntera)"/>'
+       + '<ellipse cx="'+n(-R*.045)+'" cy="'+n(-R*.014)+'" rx="'+n(R*.055)+'" ry="'+n(R*.021)+'"'
+       + ' fill="#f6bd6a" opacity=".55"/></g>';
+  }
+  s += '<path d="M0 '+n(-R*.04)+' Q '+n(R*.07)+' '+n(R*.44)+' '+n(R*.11)+' '+n(R*.84)+'"'
+     + ' fill="none" stroke="#e6d59c" stroke-width="'+n(Math.max(.65,R*.038))+'" stroke-linecap="round"/>';
+  s += '<ellipse cx="'+n(R*.11)+'" cy="'+n(R*.86)+'" rx="'+n(R*.065)+'" ry="'+n(R*.046)+'" fill="#bc7a2e"/>';
+  return s;
+}
+
+/* Un lirio. `inc` inclina la flor: 0 mira de frente, 1 se va de perfil. */
+function lirio(cx,cy,R,rot,start,pal,inc){
+  const ap = (1 - (inc||0)*.24).toFixed(3);
+  let s = '<g transform="translate('+cx+' '+cy+') rotate('+rot+')" filter="url(#suave)">'
+        + '<g class="nod" style="--nd:'+rnd(6.5,9.5).toFixed(1)+'s;--np:'+rnd(-4,0).toFixed(1)+'s">'
+        + '<g transform="scale(1 '+ap+')">';
+
+  s += '<g class="brillo" style="--d:'+start.toFixed(2)+'s">'
+     + '<ellipse rx="'+n(R*1.26)+'" ry="'+n(R*1.20)+'" fill="url(#'+pal.halo+')"/></g>';
+
+  /* verticilo exterior (sépalos): los estrechos, detrás */
+  [0,120,240].forEach(function(a,i){
+    const d   = start + i*.07;
+    const len = R*1.20*rnd(.97,1.04), w = R*.38*rnd(.95,1.05);
+    s += '<g transform="rotate('+n(a+rnd(-5,5))+')">'
+       + '<g class="abre" style="--d:'+d.toFixed(2)+'s;--r:'+n(rnd(9,18))+'deg">'
+       + tepaloPintado(len,w,pal,false)
+       + '</g></g>';
+  });
+
+  /* la hondura de la garganta, entre los dos verticilos */
+  s += '<g class="brillo" style="--d:'+(start+.22).toFixed(2)+'s">'
+     + '<ellipse rx="'+n(R*.52)+'" ry="'+n(R*.50)+'" fill="url(#corazonSombra)"/></g>';
+
+  /* verticilo interior: los anchos, delante y más pecosos */
+  [60,180,300].forEach(function(a,i){
+    const d   = start + .26 + i*.07;
+    const len = R*1.12*rnd(.97,1.03), w = R*.49*rnd(.95,1.05);
+    s += '<g transform="rotate('+n(a+rnd(-5,5))+')">'
+       + '<g class="abre" style="--d:'+d.toFixed(2)+'s;--r:'+n(rnd(-18,-9))+'deg">'
+       + tepaloPintado(len,w,pal,true)
+       + '</g></g>';
+  });
+
+  s += '<g class="nucleo" style="--d:'+(start+.70).toFixed(2)+'s">'
+     + '<circle r="'+n(R*.27)+'" fill="url(#estrella)"/>'
+     + surcos(R,pal.vena)
+     + estambres(R) + '</g>';
+  return s + '</g></g></g>';
+}
+
+/* Capullo de lirio: un huso largo, verde, que se dora al abrirse. */
+function capullo(cx,cy,R,rot,d){
+  const h = R*3.4;
+  return '<g transform="translate('+cx+' '+cy+') rotate('+rot+')">'
+   + '<g class="brota" style="--d:'+d.toFixed(2)+'s">'
+   + '<path d="M0 '+n(R*.30)
+   +   ' C '+n(-R*.66)+' '+n(-R*.10)+', '+n(-R*.54)+' '+n(-h*.66)+', 0 '+n(-h)
+   +   ' C '+n(R*.54)+' '+n(-h*.66)+', '+n(R*.66)+' '+n(-R*.10)+', 0 '+n(R*.30)+' Z"'
+   +   ' fill="url(#gCapullo)" stroke="#6f8c4c" stroke-opacity=".42" stroke-width=".5"/>'
+   + '<path d="M0 '+n(R*.20)+' C '+n(-R*.38)+' '+n(-h*.30)+', '+n(-R*.30)+' '+n(-h*.70)+', 0 '+n(-h*.97)+'"'
+   +   ' fill="none" stroke="#ffffff" stroke-opacity=".32" stroke-width=".8"/>'
+   + '<path d="M0 '+n(R*.20)+' C '+n(R*.34)+' '+n(-h*.30)+', '+n(R*.26)+' '+n(-h*.70)+', 0 '+n(-h*.97)+'"'
+   +   ' fill="none" stroke="#3f6230" stroke-opacity=".40" stroke-width=".7"/>'
+   + '<path d="M '+n(-R*.30)+' '+n(R*.25)+' Q '+n(-R*.95)+' '+n(-h*.30)+' '+n(-R*.16)+' '+n(-h*.54)
+   +   ' Q '+n(-R*.06)+' '+n(-h*.12)+' '+n(-R*.30)+' '+n(R*.25)+' Z" fill="url(#gHoja)" opacity=".9"/>'
+   + '</g></g>';
+}
+
+/* Hoja del lirio: larga, muy estrecha y lanceolada, con su lomo de luz. */
+function hoja(x,y,ang,L,d,curva){
+  const c = (curva === undefined) ? .30 : curva;
+  const W = L*.105;
+  const tx = n(L*c*.55), ty = n(-L);
+  return '<g transform="translate('+x+' '+y+') rotate('+ang+')">'
+   + '<g class="brota" style="--d:'+d.toFixed(2)+'s">'
+   + '<path d="M0 0 C '+n(-W*1.15)+' '+n(-L*.26)+', '+n(-W*1.55+L*c*.28)+' '+n(-L*.70)+', '+tx+' '+ty
+   +   ' C '+n(W*1.70+L*c*.20)+' '+n(-L*.66)+', '+n(W*1.25)+' '+n(-L*.24)+', 0 0 Z"'
+   +   ' fill="url(#gHoja)" stroke="#22432a" stroke-opacity=".42" stroke-width=".5"/>'
+   + '<path d="M '+n(-W*.30)+' '+n(-L*.16)+' C '+n(-W*.95)+' '+n(-L*.40)+', '+n(-W*.80)+' '+n(-L*.66)+', '+n(tx*.7)+' '+n(-L*.90)
+   +   ' C '+n(-W*.30)+' '+n(-L*.62)+', '+n(-W*.36)+' '+n(-L*.38)+', '+n(-W*.30)+' '+n(-L*.16)+' Z"'
+   +   ' fill="#a6c87c" opacity=".20"/>'
+   + '<path d="M0 0 Q '+n(L*c*.10)+' '+n(-L*.55)+' '+n(tx*.94)+' '+n(-L*.96)+'"'
+   +   ' fill="none" stroke="#1d3b24" stroke-width=".65" opacity=".40"/>'
+   + '</g></g>';
+}
+
+function tallo(x1,y1,x2,y2,cx,cy,w,d,dur){
+  return '<path class="tallo" data-d="'+d+'" data-dur="'+dur+'"'
+   + ' d="M'+x1+' '+y1+' Q '+cx+' '+cy+' '+x2+' '+y2+'"'
+   + ' stroke="url(#gTallo)" stroke-width="'+w+'" fill="none" stroke-linecap="round"/>';
+}
+function grupo(dur,fase,contenido,lejos){
+  return '<g class="sway" style="--sd:'+dur+'s;--sp:'+fase+'s"'
+   + (lejos ? ' filter="url(#lejos)" opacity=".88"' : '') + '>' + contenido + '</g>';
+}
+
+/* ===================== composición ===================== */
+const B     = {x:200, y:604};
+const ORO   = {out:'tepA', in:'tepB', mota:'#8a3a22', vena:'#b39a35',
+               borde:'#e2bb63', rizo:'#fdf5d6', halo:'gHalo'};
+const AMBAR = {out:'tepC', in:'tepD', mota:'#7d3418', vena:'#ab8c2c',
+               borde:'#e0ad4e', rizo:'#fdf0cd', halo:'gHalo2'};
+
+let arte = '';
+
+/* -- tallo trasero derecho: desenfocado, es el que da la hondura -- */
+arte += grupo(9.4,-2.1,
+    tallo(B.x,B.y,300,392,262,508,3.0,0.55,1.05)
+  + hoja(292,516,34,76,1.40,.30)
+  + hoja(272,480,40,70,1.55,.34)
+  + hoja(288,430,32,58,1.70,.30)
+  + tallo(300,392,332,330,320,356,2.0,1.35,.40)
+  + tallo(300,392,330,240,318,308,1.8,1.42,.42)
+  + tallo(300,392,352,404,334,400,1.8,1.50,.30)
+  + capullo(332,330,9,24,2.05)
+  + capullo(300,384,8,-8,2.20)
+  + lirio(330,240,28,-24,1.80,ORO,.30)
+  + lirio(352,404,24,28,2.60,AMBAR,.36)
+, true);
+
+/* -- tallo trasero izquierdo: otra flor lejana, para que no pese un solo lado -- */
+arte += grupo(10.2,-4.6,
+    tallo(B.x,B.y,110,404,146,516,2.8,0.62,1.05)
+  + hoja(126,492,-36,72,1.45,-.30)
+  + hoja(116,440,-30,58,1.62,-.26)
+  + tallo(110,404,68,356,84,384,1.8,1.48,.42)
+  + tallo(110,404,74,362,86,378,1.8,1.56,.30)
+  + capullo(74,362,8,-22,2.15)
+  + lirio(68,356,24,21,2.05,AMBAR,.34)
+, true);
+
+/* -- tallo derecho (algo más bajo que el izquierdo, para romper la simetría) -- */
+arte += grupo(8.6,-1.2,
+  '<g transform="translate(4 18)">'
+  + tallo(B.x,B.y-18,306,344,266,490,4.2,0.42,1.24)
+  + hoja(252,476,48,86,1.05,.30)
+  + hoja(284,412,36,74,1.30,.26)
+  + hoja(268,444,58,60,1.45,.34)
+  + hoja(298,374,30,56,1.60,.24)
+  + hoja(292,336,44,48,1.72,.28)
+  + hoja(316,404,22,50,1.78,.20)
+  + tallo(306,344,320,296,318,318,2.2,1.45,.35)
+  + tallo(306,344,268,326,286,340,2.2,1.55,.35)
+  + tallo(306,344,338,270,332,304,1.9,1.65,.35)
+  + capullo(338,270,9,26,2.35)
+  + lirio(268,326,35,-16,2.44,AMBAR,.34)
+  + lirio(320,296,38,17,2.16,ORO,.26)
+  + '</g>'
+);
+
+/* -- tallo izquierdo -- */
+arte += grupo(8.0,-3.4,
+    tallo(B.x,B.y,94,350,134,498,4.4,0.28,1.28)
+  + hoja(150,482,-46,94,0.90,-.30)
+  + hoja(122,418,-36,78,1.15,-.26)
+  + hoja(136,452,-58,62,1.32,-.34)
+  + hoja(104,378,-30,56,1.48,-.22)
+  + hoja(100,340,-44,46,1.58,-.28)
+  + hoja(118,398,-20,48,1.66,-.20)
+  + tallo(94,350,72,300,80,324,2.3,1.25,.35)
+  + tallo(94,350,150,348,118,352,2.3,1.35,.35)
+  + tallo(94,350,64,272,74,306,1.9,1.45,.35)
+  + capullo(64,272,9,-24,2.25)
+  + lirio(150,348,33,13,1.88,AMBAR,.32)
+  + lirio(72,300,38,-19,1.60,ORO,.28)
+);
+
+/* -- tallo central: los tres lirios grandes -- */
+arte += grupo(7.4,-0.6,
+    tallo(B.x,B.y,196,214,178,408,4.8,0.10,1.40)
+  + hoja(176,424,-26,102,0.85,-.28)
+  + hoja(214,438,28,96,1.00,.28)
+  + hoja(188,352,20,80,1.20,.24)
+  + hoja(206,288,34,64,1.40,.22)
+  + hoja(190,248,-22,52,1.55,-.20)
+  + hoja(202,318,40,54,1.62,.26)
+  + hoja(184,392,-38,62,1.68,-.26)
+  + hoja(208,226,26,42,1.80,.20)
+  + tallo(196,214,196,150,194,180,2.5,1.45,.35)
+  + tallo(196,214,126,232,158,224,2.5,1.55,.35)
+  + tallo(196,214,272,220,240,220,2.5,1.65,.35)
+  + tallo(196,214,262,126,244,172,2.0,1.75,.35)
+  + tallo(196,214,138,116,152,164,2.0,1.85,.35)
+  + capullo(262,126,10,20,2.45)
+  + capullo(138,116,9,-16,2.60)
+  + lirio(126,232,45,-22,2.72,ORO,.20)
+  + lirio(272,220,43,19,3.00,AMBAR,.18)
+  + lirio(196,150,55,-5,3.30,ORO,.05)
+);
+
+const jardin = document.getElementById('jardin');
+jardin.innerHTML = arte;
+
+/* los tallos se dibujan solos, de la base hacia la flor */
+jardin.querySelectorAll('.tallo').forEach(function(p){
+  const L = p.getTotalLength();
+  p.style.strokeDasharray  = L + ' ' + L;
+  p.style.strokeDashoffset = L;
+  p.style.animation = 'dibujar ' + p.dataset.dur + 's cubic-bezier(.35,.1,.25,1) ' + p.dataset.d + 's forwards';
+});
+
+/* ===================== el aire de la lámina ===================== */
+const marco  = document.getElementById('marco');
+const luz    = document.querySelector('.luz');
+const quieto = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* La caída se mide en píxeles reales del marco y se vuelve a medir si la
+   ventana cambia: si no, al girar el móvil los pétalos se paran a media
+   lámina. Como `--h` se hereda, basta con ponerla una vez en el marco. */
+function medirCaida(){
+  marco.style.setProperty('--h', Math.round(marco.clientHeight * 1.24) + 'px');
+}
+medirCaida();
+addEventListener('resize', medirCaida);
+
+/* ===================== pétalos que caen ===================== */
+const TONOS = ['#f8dc8e','#f3c96a','#eab848','#fce9b4','#efd07c','#e8bf58'];
+/* Tres hondos. Lo de cerca va grande, nítido y ligero; lo de atrás,
+   pequeño, borroso y lento. El tamaño sale del hondo y no del azar:
+   eso es lo que hace que el aire tenga fondo y no parezca confeti. */
+const HONDOS = [
+  {clase:'',      an:[7,12.5], dur:[8.5,13.5], op:[.52,.82]},
+  {clase:'medio', an:[5,9],    dur:[12,17.5],  op:[.30,.48]},
+  {clase:'lejos', an:[4,7],    dur:[16,23],    op:[.16,.30]}
+];
+(function lluvia(){
+  for(let i=0;i<21;i++){
+    const h = HONDOS[i % HONDOS.length];
+    const p = document.createElement('div');
+    p.className = 'petalo' + (h.clase ? ' ' + h.clase : '');
+    const an = rnd(h.an[0], h.an[1]);
+    p.style.left   = rnd(-3,100).toFixed(1) + '%';
+    p.style.width  = an.toFixed(1) + 'px';
+    p.style.height = (an*2.45).toFixed(1) + 'px';
+    p.style.setProperty('--o', rnd(h.op[0], h.op[1]).toFixed(2));
+    p.style.animationDuration = rnd(h.dur[0], h.dur[1]).toFixed(1) + 's';
+    p.style.animationDelay    = rnd(4.5,19).toFixed(1) + 's';   /* después del ramo */
+    const t = TONOS[i % TONOS.length];
+    const hijo = document.createElement('i');
+    hijo.style.background = 'linear-gradient(140deg,#fff0c4 0%, ' + t + ' 48%, ' + t + ' 100%)';
+    hijo.style.animationDuration = rnd(3.2,6.4).toFixed(1) + 's';
+    p.appendChild(hijo);
+    marco.appendChild(p);
+  }
+})();
+
+/* ===================== polvo de oro ===================== */
+(function polvo(){
+  for(let i=0;i<20;i++){
+    const d = document.createElement('div');
+    d.className = 'polvo';
+    const s = rnd(1.3,4.2);
+    d.style.left   = rnd(4,96).toFixed(1) + '%';
+    d.style.top    = rnd(8,82).toFixed(1) + '%';
+    d.style.width  = s.toFixed(1) + 'px';
+    d.style.height = s.toFixed(1) + 'px';
+    d.style.animationDuration = rnd(7,17).toFixed(1) + 's';
+    d.style.animationDelay    = rnd(2,13).toFixed(1) + 's';
+    marco.appendChild(d);
+  }
+})();
+
+/* ===================== lo que deja el dedo al tocar ===================== */
+/* Un aro tibio, un puñado de chispas y un corazón que se va subiendo.
+   Todo se borra solo: nada se queda colgado en el DOM. */
+function efimero(el, ms){ setTimeout(function(){ el.remove(); }, ms); }
+
+function aro(x,y){
+  const a = document.createElement('div');
+  const d = rnd(54,86);
+  a.className = 'toque';
+  a.style.cssText += 'left:' + x + 'px;top:' + y + 'px;width:' + d + 'px;height:' + d + 'px;opacity:.9';
+  marco.appendChild(a);
+  requestAnimationFrame(function(){
+    a.style.transform = 'translate(-50%,-50%) scale(2.1)';
+    a.style.opacity   = '0';
+  });
+  efimero(a, 1300);
+}
+
+function chispas(x,y){
+  for(let i=0;i<6;i++){
+    const c = document.createElement('div');
+    const s = rnd(2.5,5.5);
+    const ang = rnd(0,Math.PI*2), r = rnd(26,72);
+    c.className = 'chispa';
+    c.style.cssText += 'left:' + x + 'px;top:' + y + 'px;width:' + s.toFixed(1) + 'px;'
+      + 'height:' + s.toFixed(1) + 'px;opacity:' + rnd(.55,.95).toFixed(2);
+    marco.appendChild(c);
+    requestAnimationFrame(function(){
+      c.style.transform = 'translate(-50%,-50%) translate('
+        + (Math.cos(ang)*r).toFixed(0) + 'px,' + (Math.sin(ang)*r - 22).toFixed(0) + 'px) scale(.4)';
+      c.style.opacity = '0';
+    });
+    efimero(c, 1400);
+  }
+}
+
+function corazon(x,y){
+  const h = document.createElement('div');
+  h.className = 'late';
+  h.textContent = '❤';
+  h.style.cssText += 'left:' + x + 'px;top:' + y + 'px;font-size:' + rnd(14,29).toFixed(0) + 'px';
+  marco.appendChild(h);
+  requestAnimationFrame(function(){
+    h.style.opacity = '1';
+    h.style.transform = 'translate(-50%,-50%)'
+      + ' translateY(-' + rnd(90,165).toFixed(0) + 'px)'
+      + ' translateX(' + rnd(-24,24).toFixed(0) + 'px)'
+      + ' scale(' + rnd(1.1,1.6).toFixed(2) + ')'
+      + ' rotate(' + rnd(-20,20).toFixed(0) + 'deg)';
+    setTimeout(function(){ h.style.opacity = '0'; }, 750);
+  });
+  efimero(h, 1950);
+}
+
+marco.addEventListener('pointerdown', function(e){
+  const r = marco.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  aro(x,y);
+  chispas(x,y);
+  corazon(x,y);
+});
+
+/* ============ la lámina se inclina hacia donde está la luz ============ */
+/* Solo con ratón (en el móvil el dedo ya hace otra cosa) y solo si el
+   sistema no ha pedido quietud. El reflejo del papel corre al revés que
+   la inclinación: es lo que hace que se lea como una lámina de verdad. */
+if (!quieto && matchMedia('(hover:hover) and (pointer:fine)').matches){
+  let caja = marco.getBoundingClientRect();
+  let pedido = 0;
+  addEventListener('resize', function(){ caja = marco.getBoundingClientRect(); });
+  addEventListener('pointermove', function(e){
+    if (pedido) return;
+    pedido = requestAnimationFrame(function(){
+      pedido = 0;
+      const lim = function(v){ return Math.max(-1, Math.min(1, v)); };
+      const dx = lim((e.clientX - (caja.left + caja.width/2))  / (caja.width));
+      const dy = lim((e.clientY - (caja.top  + caja.height/2)) / (caja.height));
+      marco.style.transform = 'rotateY(' + (dx*2.4).toFixed(2) + 'deg)'
+                            + ' rotateX(' + (-dy*1.9).toFixed(2) + 'deg)';
+      if (luz) luz.style.translate = (-dx*2.6).toFixed(2) + '% ' + (-dy*2.6).toFixed(2) + '%';
+    });
+  }, {passive:true});
+  document.addEventListener('pointerleave', function(){
+    marco.style.transform = '';
+    if (luz) luz.style.translate = '';
+  });
+}
+</script>
+</body>
+</html>
