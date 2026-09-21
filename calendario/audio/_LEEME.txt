@@ -1,0 +1,6 @@
+Pon aqui los archivos de musica, nombrados con la fecha:
+
+    2026-08-21.mp3
+    2026-08-21 - Radiohead - Creep.mp3   <- asi ademas rellena solo el titulo
+
+Valen .mp3 .m4a .wav .ogg .flac

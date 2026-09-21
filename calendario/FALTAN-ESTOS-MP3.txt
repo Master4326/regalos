@@ -1,0 +1,10 @@
+Faltan 5 canciones. Suéltalas en audio/ con EXACTAMENTE este nombre
+(o con el nombre que traigan, y luego ejecuta ACTUALIZAR.bat).
+
+  2026-09-24 - Gracie Abrams - I Love You, I'm Sorry.mp3
+  2026-09-28 - Mon Laferte - Mi Buen Amor.mp3
+  2026-09-29 - Djo - End of Beginning.mp3
+  2026-09-30 - Hozier - Cherry Wine.mp3
+  2026-10-01 - Hozier - Too Sweet.mp3
+
+Los enlaces de compra están en COMPRAR-CANCIONES.txt

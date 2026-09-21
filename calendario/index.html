@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calendario</title>
+
+<!-- Las tipografías se descargan si hay internet. Sin internet se usan las de
+     reserva —Courier, Georgia y la del sistema— y el calendario sigue
+     funcionando igual, solo que con otra letra.
+     Press Start 2P y VT323 son las del reproductor: la primera para rótulos
+     cortos, la segunda para todo lo que hay que leer. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Fraunces:opsz,wght@9..144,300..600&family=Archivo:wght@400;500;600&display=swap">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/efectos.css">
+</head>
+<body>
+
+<!-- La viñeta: oscurece los bordes de la pantalla. No captura el ratón. -->
+<div class="vineta" aria-hidden="true"></div>
+
+<div class="hoja" id="hoja"></div>
+<div id="escenario"></div>
+
+<!-- El orden importa: perf decide cuánto trabajo se hace, color prepara la
+     paleta, fx reparte las animaciones y ambiente las usa. Ninguno de los
+     cuatro es obligatorio: si faltara alguno, el calendario sigue abriéndose
+     (todo el que pregunta lo hace con `window.CalAlgo ? … : valor por defecto`). -->
+<script src="js/perf.js"></script>
+<script src="js/color.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/ambiente.js"></script>
+
+<script src="config.js"></script>
+<script src="canciones.js"></script>
+<script>
+/* ============================================================
+   Un año de canciones — motor
+   No hace falta tocar nada de este archivo.
+   El contenido vive en canciones.js y los ajustes en config.js
+   ============================================================ */
+"use strict";
+
+var MESES = ["enero","febrero","marzo","abril","mayo","junio",
+             "julio","agosto","septiembre","octubre","noviembre","diciembre"];
+var SEMANA = ["L","M","X","J","V","S","D"];
+
+var cfg   = (typeof CONFIG    !== "undefined") ? CONFIG    : {};
+var datos = (typeof CANCIONES !== "undefined") ? CANCIONES : {};
+var ANIO  = cfg.anio || new Date().getFullYear();
+var LIBRE = cfg.modo === "libre";
+
+/* El único sitio donde queda un título es la PESTAÑA del navegador. En
+   pantalla no hay portada ni dedicatoria: la app es el calendario y ya. */
+if (cfg.titulo) document.title = cfg.titulo;
+
+var hoy = new Date(); hoy.setHours(0,0,0,0);
+var hoja = document.getElementById("hoja");
+var escenario = document.getElementById("escenario");
+
+/* El calendario vive SIEMPRE dentro de UN mes, y al abrirlo es el de hoy.
+   No hay tablero de los doce meses a propósito: ver el año entero de un
+   vistazo enseña de golpe cuánto queda por llenar, convierte el regalo en una
+   lista de tareas y quita las ganas de volver mañana. Aquí solo hay un mes y,
+   dentro de él, el día de hoy encendido esperando a que lo abras. */
+var mesVisto = mesInicial();
+var audio = null;
+var mando = null;          // los mandos de la canción abierta, para el teclado
+var cerrando = 0;          // token de cierre, ver cerrar()
+var apertura = 0;          // token de apertura: lo miran los temporizadores del
+                           // envoltorio y de la reproducción automática
+
+/* ── utilidades ───────────────────────────────────────────── */
+function clave(a,m,d){
+  return a+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+}
+function diasDe(a,m){ return new Date(a,m+1,0).getDate(); }
+function arranque(a,m){ var d=new Date(a,m,1).getDay(); return d===0?6:d-1; }
+function hoyClave(){ return clave(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()); }
+function futura(k){
+  if (LIBRE) return false;
+  var p=k.split("-");
+  var f=new Date(+p[0],+p[1]-1,+p[2]); f.setHours(0,0,0,0);
+  return f > hoy;
+}
+/* El mes en el que se aterriza al abrir. Si el calendario NO es de este año
+   —se regala en diciembre uno del año que viene, o se vuelve a él en enero—
+   se cae al principio o al final, que es donde hay algo que mirar. */
+function mesInicial(){
+  if (hoy.getFullYear() === ANIO) return hoy.getMonth();
+  return hoy.getFullYear() > ANIO ? 11 : 0;
+}
+/* Hasta dónde deja avanzar la flecha. Pasear por meses que están ENTEROS en el
+   futuro es pasear por casillas apagadas: se llega al mes de hoy y ahí para.
+   En modo libre, y en un año ya pasado, el año entero está abierto. */
+function mesTope(){
+  if (LIBRE || hoy.getFullYear() > ANIO) return 11;
+  if (hoy.getFullYear() < ANIO) return 0;
+  return hoy.getMonth();
+}
+/* Cuántas canciones tiene un mes, cuántas has abierto y cuántas te esperan.
+   `pend` deja fuera las futuras: no son deuda, es que aún no les toca. */
+function cuentaMes(m){
+  var total=diasDe(ANIO,m), con=0, abiertas=0, pend=0;
+  for (var d=1; d<=total; d++){
+    var k=clave(ANIO,m,d);
+    if (!datos[k]) continue;
+    con++;
+    if (yaVista(k)) abiertas++;
+    else if (!futura(k)) pend++;
+  }
+  return { con:con, abiertas:abiertas, pend:pend };
+}
+function vistas(){
+  try { return JSON.parse(localStorage.getItem("canciones_vistas_"+ANIO) || "[]"); }
+  catch(e){ return []; }
+}
+function anotar(k){
+  try {
+    var a=vistas();
+    if (a.indexOf(k)===-1){ a.push(k); localStorage.setItem("canciones_vistas_"+ANIO, JSON.stringify(a)); }
+  } catch(e){}
+}
+function yaVista(k){ return vistas().indexOf(k) !== -1; }
+function esc(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+/* Un reloj que no depende de la hora del sistema: se usa para subir el volumen
+   sin que un cambio de hora o un fps distinto lo descoloque. */
+function reloj0(){ return window.performance ? performance.now() : Date.now(); }
+
+function reloj(s){
+  if(!isFinite(s)||s<0) s=0;
+  return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+}
+
+/* ── la paleta ────────────────────────────────────────────── */
+/* Un solo sitio decide qué color manda en cada pantalla:
+     el mes        → su propio tono (los doce son un giro lento de la rueda)
+     una canción   → el color de su carátula (y si no se puede leer, el de su
+                     título, que sale siempre igual para la misma canción)   */
+function paleta(){
+  if (!window.CalColor) return;
+  CalColor.aplicar(CalColor.deMes(mesVisto));
+}
+
+/* La llave de color de una canción. Es la MISMA cadena con la que la escena
+   saca su paleta, y eso es lo que importa: si el relleno saliera solo del
+   título, la carátula de repuesto se pintaba de un color y la pantalla de
+   otro, y se notaba que no eran de la misma canción. */
+function llave(c){ return (c && c.titulo || "") + "|" + (c && c.artista || ""); }
+
+/* Relleno para cuando un día no tiene carátula: un degradado sacado de esa
+   llave. Estable (la misma canción, el mismo relleno) y de la paleta, nunca
+   un color escrito a mano. */
+function relleno(t){
+  if (window.CalColor){
+    var p = CalColor.deTexto(String(t||"?"));
+    return "linear-gradient(148deg," + p.acentoTenue + "," + p.panel2 + ")";
+  }
+  return "linear-gradient(148deg,#3a2f18,#14101f)";
+}
+
+/* Una carátula que no carga —el archivo no está, o el nombre no coincide— deja
+   el hueco roto del navegador, con su icono y su borde claro. Se cambia por el
+   mismo degradado que se pinta cuando ese día no tiene carátula: así un fallo
+   se ve como una decisión y no como un error. */
+function siNoCarga(img, titulo, molde){
+  if (!img) return;
+  img.onerror = function(){
+    if (!img.parentNode) return;
+    var d = document.createElement("div");
+    d.className = molde;                  // "tapa" en el calendario, "surco" en la escena
+    d.style.background = relleno(titulo);
+    if (molde === "surco") d.innerHTML = "&#9834;";
+    img.parentNode.replaceChild(d, img);
+  };
+}
+
+/* ── la tira de hoy ───────────────────────────────────────── */
+/* Lo que convierte el calendario en algo a lo que se VUELVE: una línea que
+   dice qué te toca hoy y un botón para abrirlo. Cuando ya lo abriste lo dice
+   y se calla —lo de hoy está cobrado, vuelve mañana—, y cuando te has ido a
+   mirar otro mes es el camino de vuelta. */
+function tira(){
+  var kHoy = hoyClave();
+  var mismoAnio = (hoy.getFullYear() === ANIO);
+  var esteMes   = mismoAnio && hoy.getMonth() === mesVisto;
+  var c = cuentaMes(mesVisto);
+  var marcador = c.con ? '<span class="cuenta">'+c.abiertas+'/'+c.con+'</span>' : '';
+  var fechaHoy = "hoy &middot; " + hoy.getDate() + " de " + MESES[hoy.getMonth()];
+
+  var clase="tira", cuando, que, boton="";
+
+  if (esteMes && datos[kHoy] && !yaVista(kHoy)){
+    /* El caso que importa: hoy hay canción y sigue envuelta. */
+    clase += " reclamable";
+    cuando = fechaHoy;
+    que    = "te espera una canción";
+    boton  = '<button class="llamada" id="llamada" data-k="'+kHoy+'">Abrirla</button>';
+  } else if (esteMes && datos[kHoy]){
+    /* Ya la abriste: la tira DESAPARECE. Se cobró lo de hoy y no hace falta
+       decirlo — la casilla se queda ahí para volver a ella cuando quieras. */
+    return "";
+  } else if (esteMes){
+    cuando = fechaHoy;
+    que    = "hoy no hay canción";
+  } else {
+    /* Estás mirando otro mes: ni fecha ni llamada, solo cuánto queda ahí. */
+    cuando = MESES[mesVisto];
+    que    = c.pend ? (c.pend===1 ? "queda 1 sin abrir" : "quedan "+c.pend+" sin abrir")
+                    : (c.abiertas ? "todo abierto" : "sin canciones todavía");
+    if (mesVisto !== mesInicial())
+      boton = '<button class="llamada suave" id="llamada">'
+            + (mismoAnio ? "Volver a hoy" : "Volver a "+MESES[mesInicial()])
+            + '</button>';
+  }
+
+  return '<div class="'+clase+'"><span class="pico"></span>'
+       +   '<div class="dice"><span class="cuando">'+cuando+'</span>'
+       +     '<span class="que">'+que+'</span></div>'
+       +   boton + marcador
+       + '</div>';
+}
+
+/* ── el mes: la única pantalla ────────────────────────────── */
+function pintarMes(conEntrada){
+  var total=diasDe(ANIO,mesVisto), off=arranque(ANIO,mesVisto), kHoy=hoyClave();
+  var tope = mesTope();
+  /* El mes entero elige UNA forma de entrar y las casillas se escalonan dentro
+     de ella con --i. Siempre la misma para el mismo mes: agosto entra como
+     entra agosto. */
+  var entra = conEntrada && window.CalFx ? " " + CalFx.rejilla(mesVisto, ANIO) : "";
+
+  var h = '<div class="timon">'
+    +   '<button class="giro" id="ant"'+(mesVisto===0?" disabled":"")+' aria-label="Mes anterior">&#8249;</button>'
+    +   '<h2>'+MESES[mesVisto]+'<span>'+ANIO+'</span></h2>'
+    +   '<button class="giro" id="sig"'+(mesVisto>=tope?" disabled":"")+' aria-label="Mes siguiente">&#8250;</button>'
+    + '</div>'
+    + tira()
+    + '<div class="semana">';
+  SEMANA.forEach(function(s){ h += '<span>'+s+'</span>'; });
+  h += '</div><div class="rejilla-mes'+entra+'">';
+
+  var i = 0;
+  for (var o=0;o<off;o++){ h += '<div class="dia nada"></div>'; }
+
+  for (var d=1;d<=total;d++){
+    var k=clave(ANIO,mesVisto,d), c=datos[k], marca=(k===kHoy?" hoy":"");
+    /* El paquete de cada día se envuelve en el color de su canción. Sin
+       color.js no hay --tono y todo cae al acento del mes, que también vale. */
+    var tono = "";
+    if (c && window.CalColor){
+      var pc = CalColor.deTexto(llave(c));
+      tono = ";--tono:" + pc.acento + ";--tono-luz:" + pc.acentoLuz;
+    }
+    var pos = ' style="--i:'+(i++)+tono+'"';
+    if (!c){
+      h += '<div class="dia libre'+marca+'"'+pos+'>'+d+'</div>';
+    } else if (futura(k)){
+      h += '<div class="dia echado'+marca+'"'+pos+'><span class="cifra">'+d+'</span>'
+         +   '<span class="broche"></span></div>';
+    } else if (yaVista(k)){
+      /* Ya abierto: se nota que lo abriste —la cinta está suelta— pero la
+         casilla NO dice qué había dentro. Si algún día vuelves a él, la
+         sorpresa la pone tu memoria, no una miniatura. */
+      h += '<button class="dia visto'+marca+'" data-k="'+k+'"'+pos+'>'
+         +   '<span class="lazo suelto"></span><span class="cifra">'+d+'</span></button>';
+    } else {
+      /* Envuelto: una cinta cruzada y el número. Nada más.
+         Y si es el de HOY, además `reclama`: la casilla que hay que abrir.
+         Es la única del mes que se mueve. */
+      h += '<button class="dia puesto'+marca+(k===kHoy?" reclama":"")+'" data-k="'+k+'"'+pos+'>'
+         +   '<span class="lazo"></span><span class="cifra">'+d+'</span></button>';
+    }
+  }
+  hoja.innerHTML = h + '</div>';
+
+  document.getElementById("ant").onclick = function(){ if(mesVisto>0){ mesVisto--; pintar(true); } };
+  document.getElementById("sig").onclick = function(){ if(mesVisto<mesTope()){ mesVisto++; pintar(true); } };
+  /* Un solo botón para las dos cosas: con día encima abre ese día, sin él
+     devuelve al mes de hoy. */
+  var llamada = document.getElementById("llamada");
+  if (llamada) llamada.onclick = function(){
+    if (llamada.dataset.k) abrir(llamada.dataset.k);
+    else { mesVisto = mesInicial(); pintar(true); window.scrollTo(0,0); }
+  };
+  hoja.querySelectorAll(".dia[data-k]").forEach(function(el){
+    el.onclick = function(){ abrir(el.dataset.k); };
+  });
+}
+
+/* conEntrada = false cuando solo estamos refrescando el estado (por ejemplo al
+   volver de una canción): repintar no es lo mismo que llegar. */
+function pintar(conEntrada){
+  paleta();
+  pintarMes(conEntrada);
+}
+
+/* ── escena de canción ────────────────────────────────────── */
+function abrir(k){
+  var c = datos[k];
+  if (!c || futura(k)) return;
+  anotar(k);
+
+  var p = k.split("-");
+  var dia = +p[2], mes = +p[1]-1;
+  var fecha = dia + " de " + MESES[mes];
+  var hayLetra = !!(c.letra && c.letra.length);
+  var sincro   = hayLetra && typeof c.letra[0] === "object" && c.letra[0].t != null;
+  var conLetraViva = sincro && !!c.audio;
+
+  /* La sal de la canción: hace que la línea 3 de ESTA canción no se anime como
+     la línea 3 de la de ayer.
+     Va PRIMERO a propósito: el efecto de entrada también se sortea con la sal,
+     así que pidiéndolo antes de ponerla, un mismo día se abría de una manera o
+     de otra según qué canción hubieras mirado justo antes. Con la sal ya puesta,
+     cada día tiene SU forma de abrirse y no depende del camino que hiciste. */
+  if (window.CalFx) CalFx.ponSal(k + "|" + llave(c));
+
+  /* Cada día se abre a su manera, y siempre a la misma. */
+  var efx = window.CalFx ? CalFx.escena(dia, mes) : "";
+
+  var tapa = c.portada
+    ? '<img src="'+esc(c.portada)+'" alt="">'
+    : '<div class="surco" style="background:'+relleno(llave(c))+'">&#9834;</div>';
+
+  /* El envoltorio. El sentido del corte —a lo ancho o a lo alto— lo decide la
+     fecha, así que un día siempre se desenvuelve igual que la última vez. */
+  var corte = (window.CalFx && CalFx.semilla(dia, mes + 1, 2)) ? "corte-h" : "corte-v";
+  var envoltorio = '<div class="regalo '+corte+'" aria-hidden="true">'
+                 +   '<span class="papel a"></span><span class="papel b"></span>'
+                 +   '<span class="cinta v"></span><span class="cinta h"></span>'
+                 +   '<span class="nudo"></span>'
+                 + '</div>';
+
+  var consola = c.audio
+    ? '<div class="consola">'
+      +   '<div class="riel" id="riel"><div class="avance" id="avance"></div></div>'
+      +   '<div class="marcas"><span id="ahora">0:00</span><span id="total">--:--</span></div>'
+      +   '<div class="mandos">'
+      +     '<button class="brinco" id="atras10" aria-label="Diez segundos atrás">-10s</button>'
+      /* El icono va en un <span> vacío que dibuja el CSS a escalones. Un ▶ de
+         fuente sale redondeado y de otra época que el resto de la pantalla. */
+      +     '<button class="tecla" id="tecla" aria-label="Reproducir"><span class="icono"></span></button>'
+      +     '<button class="brinco" id="alante10" aria-label="Diez segundos adelante">+10s</button>'
+      +   '</div>'
+      + '</div>'
+    /* Lo que se lee aquí lo lee QUIEN RECIBE el regalo, no quien lo monta. Las
+       instrucciones de dónde va el mp3 están en FALTAN-ESTOS-MP3.txt, que es
+       donde hacen falta; en pantalla, un día sin música todavía es un día que
+       tiene su letra y su carátula, no un error. */
+    : '<div class="sintono">La música de este día viene de camino.'
+      + (hayLetra ? '<br>La letra ya está aquí, por si quieres leerla.' : '')
+      + '</div>';
+
+  var bloqueLetra = "", hayTrad = false;
+  if (hayLetra){
+    var v = "";
+    for (var i=0;i<c.letra.length;i++){
+      var it = c.letra[i];
+      var esObj = (it && typeof it === "object");
+      var txt = esObj ? it.texto : it;         // el original, tal como se canta
+      var tr  = esObj ? it.trad  : null;       // el español, si lo tiene
+      var t   = sincro ? it.t : null;
+      if (tr) hayTrad = true;
+      /* El verso que SE LEE —y el que tiñe el karaoke— es la traducción cuando
+         la hay. El original se queda debajo, apagado y escondido, hasta que lo
+         pidas con el botón. Una canción en español no tiene `trad` y se lee
+         tal cual: aquí no hay dos casos, hay uno. */
+      v += '<div class="verso"'+(t!=null?' data-t="'+t+'"':'')+'>'+(esc(tr || txt)||"&nbsp;")+'</div>';
+      if (tr) v += '<div class="original">'+(esc(txt)||"&nbsp;")+'</div>';
+    }
+    /* Sin rótulo: se ve que es la letra en cuanto se lee. Una etiqueta que
+       nombra lo evidente solo resta sitio a lo que importa. */
+    bloqueLetra = '<div class="letra'+(conLetraViva?"":" quieta")+'">'
+                + (hayTrad ? '<button class="idioma" id="idioma">ver original</button>' : '')
+                +   '<div class="versos" id="versos">'+v+'</div>'
+                + '</div>';
+  }
+
+  /* Dos capas: la carátula encima y el degradado del título debajo. Si la
+     imagen no está, el halo no se queda a oscuras — sigue habiendo color. */
+  var halo = c.portada
+    ? '<div class="halo" style="background-image:url(&quot;'+esc(c.portada)+'&quot;),'+relleno(llave(c))+'"></div>'
+    : '<div class="halo" style="background:'+relleno(llave(c))+'"></div>';
+
+  escenario.innerHTML = '<div class="escena '+efx+'">'+halo+'<div class="manto"></div>'
+    + '<div class="desliza">'
+    +   '<div class="dentro">'
+    +     '<button class="salir" id="salir" aria-label="Cerrar">&times;</button>'
+    /* La cabeza es lo que se lleva el efecto de entrada del día: la fecha, la
+       carátula, el título y el artista llegan juntos, como una portada. */
+    +     '<div class="cabeza">'
+    +       '<div class="fechita">'+esc(fecha)+'</div>'
+    +       '<div class="funda">'+tapa+envoltorio+'</div>'
+    +       '<h3 class="titular">'+esc(c.titulo||"(sin título)")+'</h3>'
+    +       (c.artista ? '<p class="firma">'+esc(c.artista)+'</p>' : '')
+    +     '</div>'
+    +     consola + bloqueLetra
+    +   '</div>'
+    + '</div></div>';
+
+  var escena = escenario.querySelector(".escena");
+  /* Abrir después de cerrar deprisa dejaba las dos clases puestas y ganaba la
+     de salir, por ir después en la hoja: la escena se abría invisible. */
+  escena.classList.remove("saliendo");
+  cerrando = 0;
+  var turno = ++apertura;
+  siNoCarga(escenario.querySelector(".funda img"), llave(c), "surco");
+
+  /* El papel se va con su animación, pero quien lo QUITA de verdad es esto.
+     Si un navegador no corriera las animaciones, el regalo se quedaría
+     cerrado para siempre; así, pase lo que pase, a los 1,15 s la carátula
+     está a la vista. Falla hacia lo que se ve. */
+  window.setTimeout(function(){
+    if (turno !== apertura) return;          // se abrió otro día mientras tanto
+    var papel = escenario.querySelector(".regalo");
+    if (papel && papel.parentNode) papel.parentNode.removeChild(papel);
+  }, 1150);
+
+  /* El ambiente vive por debajo del texto, dentro de la escena. */
+  if (window.CalAmbiente) CalAmbiente.montar(escena);
+
+  /* La paleta del día. Se pide la carátula; mientras llega (o si no se puede
+     leer, que es lo normal abriendo el archivo con doble clic) ya está puesta
+     la derivada del título, así que nunca hay un parpadeo de color. */
+  if (window.CalColor){
+    CalColor.deCancion(c.portada, llave(c),
+      function(pal, sigueSiendoLaBuena){
+        /* Solo la ÚLTIMA petición puede tocar la pantalla, y solo si la escena
+           sigue abierta. */
+        if (sigueSiendoLaBuena && escenario.querySelector(".escena")) CalColor.aplicar(pal);
+      });
+  }
+
+  document.body.style.overflow = "hidden";
+  document.getElementById("salir").onclick = cerrar;
+
+  /* El original, a un clic. Solo aparece el botón si hay algo que enseñar. */
+  var bIdioma = document.getElementById("idioma");
+  if (bIdioma) bIdioma.onclick = function(){
+    var caja = escenario.querySelector(".letra");
+    if (!caja) return;
+    bIdioma.textContent = caja.classList.toggle("con-original")
+      ? "ocultar original" : "ver original";
+  };
+  if (c.audio) montar(c, conLetraViva);
+}
+
+function montar(c, conLetraViva){
+  audio = new Audio(c.audio);
+  audio.preload = "metadata";
+
+  var tecla  = document.getElementById("tecla");
+  var riel   = document.getElementById("riel");
+  var avance = document.getElementById("avance");
+  var ahora  = document.getElementById("ahora");
+  var total  = document.getElementById("total");
+  var caja   = document.getElementById("versos");
+  var versos = caja ? caja.querySelectorAll(".verso") : [];
+  var activa = -1;
+
+  /* ── el reparto de animaciones de la letra ────────────────────────────────
+     Cada línea se parte en palabras (o en letras, según el efecto que le toque)
+     una sola vez, al abrir. La animación NO salta aquí: salta cuando la línea
+     se marca como viva, y por eso volver atrás en la canción la vuelve a
+     revelar. El escalonado se reparte por lo que DURA cantada la línea, no por
+     cuántas palabras tiene: una frase de 5 s se revela despacio y una de 1,2 s
+     se revela de golpe. */
+  function duracion(i){
+    var cur = c.letra[i], sig = c.letra[i+1];
+    if (!cur || !sig || cur.t == null) return 3;
+    return Math.min(7, Math.max(1.2, sig.t - cur.t));
+  }
+  if (conLetraViva && window.CalFx){
+    for (var q = 0; q < versos.length; q++) CalFx.verso(versos[q], q, duracion(q));
+  }
+
+  /* Si eres tú quien está moviendo la letra para leer hacia adelante,
+     el autoscroll se aparta unos segundos en vez de devolverte de golpe. */
+  var toqueManual = 0;
+  function anotarToque(){ toqueManual = Date.now(); }
+  if (caja){
+    caja.addEventListener("wheel", anotarToque, {passive:true});
+    caja.addEventListener("touchstart", anotarToque, {passive:true});
+  }
+  function centrarVerso(el){
+    if (!caja || !el) return;
+    if (Date.now() - toqueManual < 6000) return;
+    var destino = el.offsetTop - caja.clientHeight/2 + el.offsetHeight/2;
+    caja.scrollTop = Math.max(0, destino);
+  }
+
+  /* ── que la pantalla no se apague ─────────────────────────────────────────
+     Una canción son tres minutos sin tocar nada: el móvil se apagaba justo
+     cuando empezabas a leer la letra. El candado se pide al sonar y se suelta
+     al parar. Si el navegador no lo tiene —o lo niega, que también pasa— no se
+     nota nada: es un extra, no una pieza. */
+  var candado = null, quieroVela = false;
+  function vela(si){
+    quieroVela = si;
+    try {
+      if (si){
+        if (!candado && navigator.wakeLock && navigator.wakeLock.request)
+          navigator.wakeLock.request("screen").then(function(w){
+            candado = w;
+            if (!quieroVela) vela(false);      // se paró mientras lo concedían
+          }, function(){});
+      } else if (candado){
+        candado.release(); candado = null;
+      }
+    } catch(e){ candado = null; }
+  }
+
+  function sonando(si){
+    /* Una clase, no innerHTML: el icono es CSS y reescribir el botón entero
+       cada vez que se pausa tiraría a la basura el <span> que lo dibuja. */
+    tecla.classList.toggle("sonando", si);
+    tecla.setAttribute("aria-label", si ? "Pausa" : "Reproducir");
+    /* Con la canción parada el ambiente se congela y deja de nacer nada. */
+    if (window.CalAmbiente) CalAmbiente.sonando(si);
+    if (navigator.mediaSession) {
+      try { navigator.mediaSession.playbackState = si ? "playing" : "paused"; } catch(e){}
+    }
+    vela(si);
+    pintando(si);
+  }
+
+  function alterna(){
+    if (!audio) return;
+    if (audio.paused){ audio.play().catch(function(){}); sonando(true); }
+    else { audio.pause(); sonando(false); }
+  }
+  /* Los saltos repintan a mano: en pausa no hay bucle de fotogramas y si no,
+     la barra y la letra se quedarían donde estaban. */
+  function salta(seg){
+    if (!audio) return;
+    var fin = audio.duration || 0;
+    audio.currentTime = Math.max(0, Math.min(fin, audio.currentTime + seg));
+    pinta();
+  }
+  tecla.onclick = alterna;
+  document.getElementById("atras10").onclick  = function(){ salta(-10); };
+  document.getElementById("alante10").onclick = function(){ salta(+10); };
+
+  /* Los mismos mandos, para el teclado, el cierre y el volver a la pestaña. */
+  mando = {
+    alterna: alterna,
+    salta:   salta,
+    vela:    function(){ vela(true); },
+    suelta:  function(){ vela(false); }
+  };
+
+  /* ── la canción, también fuera de la pestaña ──────────────────────────────
+     Con esto la canción sale donde el sistema enseña lo que está sonando: la
+     pantalla de bloqueo del móvil, el panel del reloj, los botones del manos
+     libres y los del teclado. Con su título, su artista y su carátula, que es
+     lo que convierte "una pestaña que suena" en una canción que te han puesto.
+     Todo dentro de un try: es un regalo que se abre con doble clic, y hay
+     navegadores donde esto no existe. */
+  if (navigator.mediaSession && window.MediaMetadata){
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title:   c.titulo  || "",
+        artist:  c.artista || "",
+        artwork: c.portada ? [{ src: c.portada, sizes: "512x512" }] : []
+      });
+      navigator.mediaSession.setActionHandler("play",  function(){
+        audio.play().catch(function(){}); sonando(true);
+      });
+      navigator.mediaSession.setActionHandler("pause", function(){
+        audio.pause(); sonando(false);
+      });
+      navigator.mediaSession.setActionHandler("seekbackward", function(){ salta(-10); });
+      navigator.mediaSession.setActionHandler("seekforward",  function(){ salta(+10); });
+    } catch(e){}
+  }
+
+  audio.onloadedmetadata = function(){ total.textContent = reloj(audio.duration); };
+  audio.onended = function(){ sonando(false); };
+  audio.onpause = function(){ if (!audio.ended) sonando(false); };
+  audio.onerror = function(){
+    if (window.CalAmbiente) CalAmbiente.sonando(false);
+    var box = document.querySelector(".consola");
+    /* Tampoco aquí se le enseña a nadie el nombre de un archivo: si la canción
+       no suena, lo que hay que saber es que la letra sigue estando. */
+    if (box) box.outerHTML = '<div class="sintono">Esta canción no ha querido sonar.<br>'
+      + 'Cierra el día y vuelve a abrirlo.</div>';
+  };
+
+  riel.onclick = function(e){
+    var r = riel.getBoundingClientRect();
+    if (audio.duration) audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
+    pinta();
+  };
+
+  /* ── EL PINTOR ────────────────────────────────────────────────────────────
+     Todo lo que se mueve con la canción —la barra, el reloj, el verso vivo y
+     el teñido palabra a palabra— se pinta en el MISMO bucle de fotogramas.
+
+     Antes esto colgaba de `ontimeupdate`, que el navegador dispara unas cuatro
+     veces por segundo: sobra para un reloj, se ve a saltos en una barra y para
+     un karaoke es inservible —la palabra se encendería un cuarto de segundo
+     tarde, que cantando es una eternidad.
+
+     El bucle se apaga SOLO. Si la canción se para, la escena se cierra o se
+     abre otro día, el siguiente fotograma no se vuelve a pedir: no hay que
+     acordarse de cancelarlo desde fuera.                                    */
+  var lazo = 0, ritmo = {}, miPintura = apertura;
+
+  function pinta(){
+    if (!audio) return;
+    var t = audio.currentTime, dur = audio.duration || 0;
+    if (dur) avance.style.width = (t / dur * 100) + "%";
+    ahora.textContent = reloj(t);
+    if (!conLetraViva || !versos.length) return;
+
+    var idx = -1;
+    for (var i = 0; i < c.letra.length; i++){ if (c.letra[i].t <= t) idx = i; else break; }
+    if (idx !== activa){
+      activa = idx;
+      /* Se tocan SOLO las clases de estado. Sobrescribir className entero se
+         llevaría por delante la clase del efecto que le tocó a esa línea, y la
+         letra dejaría de animarse sin que fallara nada. */
+      for (var j = 0; j < versos.length; j++){
+        versos[j].classList.toggle("ido",  j < idx);
+        versos[j].classList.toggle("viva", j === idx);
+      }
+      if (idx >= 0) centrarVerso(versos[idx]);
+    }
+    /* El teñido del verso vivo. El 0,88 es porque un verso se acaba de cantar
+       un poco ANTES de que entre el siguiente: sin ese margen la última
+       palabra se encendería justo al saltar de línea y no se llegaría a ver. */
+    if (idx >= 0 && window.CalFx){
+      CalFx.karaoke(versos[idx], (t - c.letra[idx].t) / (duracion(idx) * 0.88));
+    }
+  }
+
+  function corre(){
+    if (!audio || audio.paused || miPintura !== apertura){ lazo = 0; pinta(); return; }
+    lazo = window.requestAnimationFrame(corre);
+    /* En un móvil, 30 fps: la mitad de trabajo y a simple vista no se nota. */
+    if (window.CalPerf && CalPerf.salta(ritmo, reloj0())) return;
+    pinta();
+  }
+  function pintando(si){
+    if (si){ if (!lazo) corre(); }
+    else if (lazo){ window.cancelAnimationFrame(lazo); lazo = 0; pinta(); }
+  }
+
+  /* El regalo suena solo. Dos cosas hacen que esto funcione también en un
+     teléfono: la canción ARRANCA dentro del clic que abrió el día —fuera de
+     ese gesto, Safari la bloquea— pero lo hace EN SILENCIO; y cuando el papel
+     termina de abrirse se rebobina al principio y el volumen sube. Así la
+     música entra justo con la carátula y no un segundo antes, que es lo que
+     rompería el gesto de desenvolver.
+     Si aun así el navegador la bloquea, no se rompe nada: el volumen vuelve a
+     su sitio y la canción arranca al pulsar el botón. */
+  var miTurno = apertura;
+  audio.volume = 0;
+  var promesa = audio.play();
+  if (promesa && promesa.then){
+    promesa.then(function(){ sonando(true); })
+           .catch(function(){ audio.volume = 1; sonando(false); });
+  } else { sonando(true); }
+
+  window.setTimeout(function(){
+    if (miTurno !== apertura || !audio) return;
+    if (audio.paused){ audio.volume = 1; return; }   // bloqueada: que no se quede muda
+    audio.currentTime = 0;
+    var t0 = reloj0();
+    (function sube(){
+      if (!audio || miTurno !== apertura) return;
+      var p = Math.min(1, (reloj0() - t0) / 600);
+      audio.volume = p * p;                          // entra despacio, no de golpe
+      if (p < 1) window.requestAnimationFrame(sube);
+    })();
+
+    /* El seguro de la rampa: con la pestaña de fondo el navegador no da
+       fotogramas, la subida se queda a medias y la canción sonaría muda para
+       siempre. Esto la deja a volumen entero pase lo que pase. */
+    window.setTimeout(function(){
+      if (audio && miTurno === apertura && !audio.paused) audio.volume = 1;
+    }, 900);
+  }, 1050);
+
+  /* pinchar un verso salta a ese punto de la canción */
+  versos.forEach(function(el){
+    if (el.dataset.t == null) return;
+    el.onclick = function(){
+      audio.currentTime = parseFloat(el.dataset.t);
+      if (audio.paused){ audio.play().catch(function(){}); sonando(true); }
+    };
+  });
+}
+
+/* ── cerrar ───────────────────────────────────────────────── */
+/* La salida es más corta que la entrada (0,32 s frente a 0,42 s): nadie quiere
+   esperar a que algo se vaya. El token evita que un cierre que llega tarde
+   borre una escena que ya se ha vuelto a abrir. */
+function cerrar(){
+  var escena = escenario.querySelector(".escena");
+  if (!escena || escena.classList.contains("saliendo")) return;
+
+  /* El candado de la pantalla se suelta A MANO. No vale confiar en `onpause`:
+     dos líneas más abajo se descuelgan los avisos justo antes de parar, así que
+     ese aviso ya no llega y la pantalla se quedaría encendida para siempre. */
+  if (mando){ mando.suelta(); mando = null; }
+  if (navigator.mediaSession){
+    try {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+      ["play","pause","seekbackward","seekforward"].forEach(function(a){
+        navigator.mediaSession.setActionHandler(a, null);
+      });
+    } catch(e){}
+  }
+  if (audio){
+    /* Se descuelgan los avisos ANTES de vaciar el src: si no, el `onerror` que
+       provoca el propio vaciado intenta reescribir una consola que ya se va. */
+    audio.onerror = audio.onpause = audio.onended = audio.ontimeupdate = null;
+    audio.onloadedmetadata = null;
+    audio.pause(); audio.src = ""; audio = null;
+  }
+  if (window.CalAmbiente) CalAmbiente.sonando(false);
+
+  var token = ++cerrando;
+  escena.classList.add("saliendo");
+
+  window.setTimeout(function(){
+    if (token !== cerrando) return;      // se volvió a abrir mientras salía
+    if (window.CalAmbiente) CalAmbiente.desmontar();
+    escenario.innerHTML = "";
+    document.body.style.overflow = "";
+    pintar(false);                        // refrescar el estado, sin reestrenar
+  }, 320);
+}
+
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape" && escenario.innerHTML){ cerrar(); return; }
+
+  /* Con un día abierto, el teclado es el de un reproductor: espacio para parar
+     y seguir, flechas para moverse por la canción. Las mismas flechas que fuera
+     cambian de mes — ahí no hay canción que mover, y dentro no hay mes.
+       · el espacio se atrapa porque si no la página hace scroll;
+       · y si el foco está en un botón se deja pasar, que ahí el espacio ya
+         significa "púlsalo" y pulsarlo dos veces no haría nada. */
+  if (escenario.innerHTML && mando){
+    /* Ojo con el foco: al abrir un día con el ratón, el foco se queda en SU
+       casilla, que sigue ahí debajo de la escena. Si valiera cualquier botón,
+       esa casilla tapada se comería el espacio y la canción no se pararía
+       nunca. Solo cuentan los botones de la escena —el play, los saltos, la
+       equis—, donde el espacio ya significa "pulsa este". */
+    var foco = document.activeElement;
+    var enBoton = foco && foco.tagName === "BUTTON" && escenario.contains(foco);
+    if ((e.key === " " || e.key === "Spacebar") && !enBoton){
+      e.preventDefault(); mando.alterna(); return;
+    }
+    if (e.key === "ArrowLeft") { e.preventDefault(); mando.salta(-10); return; }
+    if (e.key === "ArrowRight"){ e.preventDefault(); mando.salta(+10); return; }
+  }
+  if (!escenario.innerHTML){
+    if (e.key === "ArrowLeft"  && mesVisto > 0)         { mesVisto--; pintar(true); }
+    if (e.key === "ArrowRight" && mesVisto < mesTope()) { mesVisto++; pintar(true); }
+  }
+});
+
+/* El navegador suelta el candado de la pantalla él solo en cuanto te vas a otra
+   pestaña o a otra aplicación, y al volver ya no está: sin esto, la pantalla se
+   apagaría a mitad de la segunda vuelta. Va aquí fuera, UNA vez, y pregunta por
+   `mando`, que siempre es el de la canción abierta ahora; puesto dentro de
+   montar() se acumularía un oyente por cada día que abrieras. */
+document.addEventListener("visibilitychange", function(){
+  if (!document.hidden && mando && audio && !audio.paused) mando.vela();
+});
+
+/* ── arrastrar para cambiar de mes ──────────────────────────────────────────
+   En el móvil no hay flechas cómodas: el gesto que todo el mundo prueba en un
+   calendario es arrastrar. Solo cuenta si el dedo va MUCHO más a lo ancho que a
+   lo alto; si no, se comería el desplazamiento vertical de la página. El mes
+   sigue al dedo: arrastras a la derecha y aparece el mes de antes. */
+(function(){
+  var x0 = 0, y0 = 0, sirve = false;
+  hoja.addEventListener("touchstart", function(e){
+    sirve = (e.touches.length === 1 && !escenario.innerHTML);
+    if (!sirve) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  hoja.addEventListener("touchend", function(e){
+    if (!sirve || escenario.innerHTML) return;
+    sirve = false;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    if (dx > 0 && mesVisto > 0)         { mesVisto--; pintar(true); }
+    if (dx < 0 && mesVisto < mesTope()) { mesVisto++; pintar(true); }
+  }, { passive: true });
+})();
+
+pintar(true);
+</script>
+</body>
+</html>

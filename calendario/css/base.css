@@ -1,0 +1,775 @@
+/* ═════════════════════════════════════════════════════════════════════════
+   base.css  —  Un año de canciones
+   Funda de disco de noche. La tinta es siempre la misma noche azul-violeta,
+   pero el color que la habita sale de la paleta viva (js/color.js): del mes
+   que estás mirando, o de la carátula de la canción que has abierto.
+
+   Aquí NO hay un solo color de marca escrito a mano. Todo — bordes, texto,
+   fondos, resplandores — sale de las variables de abajo. Un hex incrustado en
+   una sola regla ensucia todas las demás en cuanto la paleta cambia.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── la paleta ────────────────────────────────────────────────────────────
+   Registradas con @property A PROPÓSITO. Sin registrar, el navegador trata
+   una variable de color como TEXTO: no la sabe interpolar y el color SALTA de
+   golpe. Con esto, la paleta entera se funde.
+
+   Los tiempos no son iguales: el acento va delante (.45s) porque es lo que el
+   ojo sigue, y el fondo y los paneles llegan detrás (.7s). Al revés se nota
+   como un corte.                                                            */
+@property --acento       { syntax: "<color>"; inherits: true; initial-value: #d9a441 }
+@property --acento-luz   { syntax: "<color>"; inherits: true; initial-value: #fcd087 }
+@property --acento-tenue { syntax: "<color>"; inherits: true; initial-value: #825f1c }
+@property --din-1        { syntax: "<color>"; inherits: true; initial-value: #1b112a }
+@property --din-2        { syntax: "<color>"; inherits: true; initial-value: #05020e }
+@property --panel        { syntax: "<color>"; inherits: true; initial-value: #1a1228 }
+@property --panel-2      { syntax: "<color>"; inherits: true; initial-value: #0e0918 }
+@property --marco        { syntax: "<color>"; inherits: true; initial-value: #312843 }
+@property --texto        { syntax: "<color>"; inherits: true; initial-value: #f5efe6 }
+@property --texto-tenue  { syntax: "<color>"; inherits: true; initial-value: #b8b0a3 }
+@property --texto-mudo   { syntax: "<color>"; inherits: true; initial-value: #7b7366 }
+@property --segunda      { syntax: "<color>"; inherits: true; initial-value: #d28787 }
+
+:root{
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --ui: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+  /* Las dos de 8 bits, las mismas del reproductor. --pixel es de rotulo:
+     ocupa muchisimo y no vale para leer, asi que va en cuerpos pequenos y en
+     mayusculas. --lectura es la que si se lee (cifras, letra de la cancion),
+     pero pinta pequena: donde entre, va un tercio mas grande que la fuente
+     que sustituye. */
+  --pixel: "Press Start 2P", "Courier New", monospace;
+  --lectura: "VT323", "Share Tech Mono", "Courier New", monospace;
+
+  --borde: color-mix(in oklab, var(--marco) 78%, transparent);
+  --paso: clamp(14px, 3vw, 22px);
+
+  /* La curva de la casa. Todo lo que ENTRA la usa: sale un pelo pasada y se
+     asienta, que es lo que hace que algo se sienta caro y no mecánico. */
+  --curva: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* La secundaria, para lo grande: entra rapidísimo y frena larguísimo. */
+  --curva-cine: cubic-bezier(0.16, 1, 0.3, 1);
+
+  transition:
+    --acento .45s ease, --acento-luz .45s ease, --acento-tenue .45s ease,
+    --din-1 .7s ease, --din-2 .7s ease,
+    --panel .7s ease, --panel-2 .7s ease, --marco .7s ease,
+    --texto .7s ease, --texto-tenue .7s ease, --texto-mudo .7s ease,
+    --segunda .7s ease;
+}
+
+*{ box-sizing: border-box }
+
+body{
+  margin: 0;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -8%,
+                    color-mix(in oklab, var(--acento) 15%, transparent), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 88% 108%,
+                    color-mix(in oklab, var(--segunda) 12%, transparent), transparent 60%),
+    radial-gradient(ellipse at top, var(--din-1) 0%, var(--din-2) 62%, #000 100%),
+    var(--din-2);
+  background-attachment: fixed;
+  color: var(--texto);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button{ font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0 }
+:focus-visible{ outline: 2px solid var(--acento-luz); outline-offset: 3px; border-radius: 4px }
+
+/* La viñeta: una sola capa fija que oscurece los bordes. Cuesta cuatro líneas
+   y hace que todo lo demás parezca fotografiado en vez de dibujado. */
+.vineta{
+  position: fixed; inset: 0; pointer-events: none; z-index: 9000;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,.42) 100%);
+}
+
+/* La hoja es el contenedor de referencia: todo lo de dentro se mide contra
+   ELLA con unidades cq*, no contra la ventana. Así el calendario crece con su
+   propia columna y no con el ancho del monitor. */
+.hoja{
+  container-type: inline-size;
+  container-name: hoja;
+  max-width: 880px; margin: 0 auto;
+  padding: clamp(20px, 4vw, 44px) var(--paso) 70px;
+}
+
+/* ── la tira de hoy ───────────────────────────────────────────────────────
+   La única llamada de la pantalla: qué te toca HOY y un botón para abrirlo.
+   Va justo encima de la cuadrícula para que el ojo salte de la frase a la
+   casilla encendida sin buscarla.                                          */
+.tira{
+  display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+  margin-bottom: 20px; padding: 12px 14px; border-radius: 0;
+  border: 2px solid color-mix(in oklab, var(--acento) 28%, transparent);
+  background: linear-gradient(103deg,
+              color-mix(in oklab, var(--panel) 88%, transparent),
+              color-mix(in oklab, var(--panel-2) 55%, transparent));
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 10%, transparent),
+              inset -1px -1px 0 var(--din-2);
+}
+/* La barrita de la izquierda. Es la misma marca que lleva la casilla de hoy:
+   una sola idea dicha dos veces, no dos adornos distintos. */
+.tira .pico{
+  flex: 0 0 auto; width: 4px; align-self: stretch; min-height: 32px;
+  background: color-mix(in oklab, var(--acento) 40%, transparent);
+}
+.tira .dice{ flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.tira .cuando{
+  font-family: var(--pixel); font-size: 8px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--texto-mudo);
+}
+.tira .que{
+  font-family: var(--lectura); font-size: clamp(19px, 3cqw, 24px);
+  letter-spacing: .03em; line-height: 1.15; color: var(--texto-tenue);
+}
+/* Cuántas llevas abiertas de este mes. Discreta a propósito: es una cuenta,
+   no una nota. */
+.tira .cuenta{
+  flex: 0 0 auto; font-family: var(--pixel); font-size: 8px;
+  letter-spacing: .08em; color: var(--texto-mudo);
+}
+
+/* Reclamable: hoy hay canción y sigue envuelta. El marco sube al acento y el
+   pico respira — es lo mismo que late en la casilla, y no hay una tercera
+   cosa moviéndose en la pantalla. */
+.tira.reclamable{
+  border-color: var(--acento);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 14%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 20px color-mix(in oklab, var(--acento) 20%, transparent);
+}
+.tira.reclamable .pico{
+  background: var(--acento);
+  box-shadow: 0 0 9px color-mix(in oklab, var(--acento) 70%, transparent);
+  animation: barra-viva 2.4s ease-in-out infinite;
+}
+.tira.reclamable .que{ color: var(--texto) }
+.tira.reclamable .cuando{ color: var(--acento) }
+
+/* El botón. El mismo relieve de 8 bits que los mandos del reproductor: luz
+   arriba a la izquierda, sombra abajo a la derecha. */
+.llamada{
+  flex: 0 0 auto;
+  font-family: var(--pixel); font-size: 9px; letter-spacing: .09em;
+  text-transform: uppercase; line-height: 1;
+  padding: 12px 15px; border: 2px solid var(--acento);
+  color: var(--din-2); background: var(--acento);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 45%, transparent),
+              inset -1px -1px 0 color-mix(in oklab, var(--din-2) 40%, transparent),
+              0 0 16px color-mix(in oklab, var(--acento) 32%, transparent);
+  transition: transform .16s var(--curva), box-shadow .18s ease, color .18s ease;
+}
+.llamada:hover{
+  transform: translateY(-2px);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 55%, transparent),
+              inset -1px -1px 0 color-mix(in oklab, var(--din-2) 40%, transparent),
+              0 0 24px color-mix(in oklab, var(--acento) 55%, transparent);
+}
+.llamada:active{ transform: translateY(1px) }
+/* La suave no llama: se ofrece. Sin relleno y sin resplandor — vuelves a una
+   canción que ya oíste, o vuelves al mes de hoy. */
+.llamada.suave{
+  background: none; color: var(--texto-tenue);
+  border-color: color-mix(in oklab, var(--acento) 38%, transparent);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 10%, transparent),
+              inset -1px -1px 0 var(--din-2);
+}
+.llamada.suave:hover{
+  color: var(--acento); border-color: var(--acento); transform: translateY(-2px);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 14%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 14px color-mix(in oklab, var(--acento) 25%, transparent);
+}
+
+/* ── vista mes ────────────────────────────────────────────────────────── */
+.timon{ display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px }
+.timon h2{
+  font-family: var(--pixel); font-weight: 400; font-size: clamp(15px, 3.3cqw, 26px);
+  text-transform: uppercase; margin: 0; letter-spacing: .06em; line-height: 1.4;
+  color: var(--acento);
+  text-shadow: 3px 3px 0 var(--din-2), 0 0 16px color-mix(in oklab, var(--acento) 45%, transparent);
+}
+.timon h2 span{ color: var(--texto-mudo); font-size: .72em; margin-left: .5em; text-shadow: none }
+/* Botones biselados, como los del reproductor: la luz arriba a la izquierda
+   y la sombra abajo a la derecha es TODO el truco del relieve de 8 bits. */
+.giro{
+  flex: 0 0 auto; width: 42px; height: 34px; border-radius: 0;
+  border: 2px solid color-mix(in oklab, var(--acento) 45%, transparent); color: var(--texto-tenue);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 16%, transparent),
+              inset -1px -1px 0 var(--din-2);
+  display: grid; place-items: center; font-family: var(--lectura); font-size: 22px; line-height: 1;
+  transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+.giro:hover:not(:disabled){
+  border-color: var(--acento); color: var(--acento);
+  background: color-mix(in oklab, var(--acento) 10%, transparent);
+}
+.giro:disabled{ opacity: .2; cursor: default }
+.semana{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; margin-bottom: 9px }
+.semana span{
+  text-align: center; font-family: var(--pixel); font-size: 7px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--segunda);
+}
+.rejilla-mes{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px }
+.dia{ aspect-ratio: 1; border-radius: 0; position: relative; overflow: hidden }
+.dia.nada{ visibility: hidden }
+.dia .cifra{ font-family: var(--display); font-weight: 300; line-height: 1 }
+
+.dia.libre{
+  border: 2px dashed color-mix(in oklab, var(--texto) 6%, transparent);
+  display: grid; place-items: center;
+  color: var(--texto-mudo); font-family: var(--lectura); font-size: 20px; cursor: default;
+}
+.dia.echado{
+  border: 2px solid var(--borde); display: grid; place-items: center; color: var(--texto-mudo);
+  background: linear-gradient(157deg,
+              color-mix(in oklab, var(--panel) 84%, transparent),
+              color-mix(in oklab, var(--panel-2) 84%, transparent));
+  cursor: default;
+}
+.dia.echado .cifra{ font-family: var(--lectura); font-size: clamp(22px, 4.2cqw, 32px) }
+.dia.echado .broche{
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 5px; height: 5px; background: var(--texto-mudo);
+}
+/* El día que se puede abrir. Brilla QUIETO: veinte casillas latiendo a la vez
+   convierten el mes en una guirnalda de feria. Late solo la de hoy. */
+.dia.puesto{
+  border: 2px solid var(--tono, var(--acento));
+  color: var(--texto);
+  background: linear-gradient(157deg,
+              color-mix(in oklab, var(--tono, var(--acento)) 22%, transparent),
+              color-mix(in oklab, var(--tono, var(--acento)) 4%, transparent));
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 12%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 14px color-mix(in oklab, var(--tono, var(--acento)) 26%, transparent);
+  display: block; cursor: pointer;
+}
+/* La cifra arriba a la izquierda, como la etiqueta de un paquete: en el
+   centro la cruzaria la cinta. */
+.dia.puesto .cifra, .dia.visto .cifra{
+  position: absolute; top: 5px; left: 8px; z-index: 2;
+  font-family: var(--lectura); font-size: clamp(22px, 4.4cqw, 34px); font-weight: 400;
+  text-shadow: 2px 2px 0 var(--din-2);
+}
+/* El día ya abierto. Sigue sin decir qué había dentro: solo que ya pasaste
+   por él. Una miniatura de la carátula aquí se cargaría la sorpresa de un
+   calendario que va día a día. */
+.dia.visto{
+  border: 2px solid color-mix(in oklab, var(--tono, var(--acento)) 40%, transparent);
+  cursor: pointer; background: var(--panel-2); display: block;
+  color: color-mix(in oklab, var(--tono, var(--acento)) 60%, var(--texto-mudo));
+  box-shadow: inset 1px 1px 0 var(--din-2), inset -1px -1px 0 color-mix(in oklab, var(--texto) 6%, transparent);
+}
+
+/* La cinta cruzada del paquete. Se dibuja con dos degradados en vez de con
+   dos elementos: son 31 casillas por mes y cada nodo de menos se nota. */
+.dia .lazo{
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(to right, transparent calc(50% - 2px),
+      var(--tono, var(--acento)) calc(50% - 2px),
+      var(--tono, var(--acento)) calc(50% + 2px),
+      transparent calc(50% + 2px)),
+    linear-gradient(to bottom, transparent calc(50% - 2px),
+      var(--tono, var(--acento)) calc(50% - 2px),
+      var(--tono, var(--acento)) calc(50% + 2px),
+      transparent calc(50% + 2px));
+}
+/* El nudo: un cuadrado, no un circulo. Es lo que lo hace pixel. */
+.dia.puesto .lazo::after{
+  content: ""; position: absolute; left: 50%; top: 50%; width: 13px; height: 13px;
+  margin: -6.5px 0 0 -6.5px; background: var(--tono-luz, var(--acento-luz));
+  border: 2px solid var(--din-2);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--tono, var(--acento)) 70%, transparent);
+}
+/* Suelta = ya lo abriste: la cinta se queda, apagada, como el papel de un
+   regalo que ya no envuelve nada. */
+.dia .lazo.suelto{ opacity: .28 }
+.dia.puesto, .dia.visto{ transition: transform .28s var(--curva), box-shadow .22s ease }
+.dia.puesto:hover, .dia.visto:hover{ transform: scale(1.07); z-index: 3 }
+.dia.puesto:hover{ box-shadow: 0 0 22px color-mix(in oklab, var(--acento) 30%, transparent) }
+.dia.hoy::after{
+  content: ""; position: absolute; top: 5px; right: 5px; width: 7px; height: 7px;
+  background: var(--segunda);
+  box-shadow: 0 0 7px var(--segunda); z-index: 4;
+  animation: barra-viva 2.4s ease-in-out infinite;
+}
+
+/* ── HOY, POR ABRIR ───────────────────────────────────────────────────────
+   La casilla de hoy con su canción todavía envuelta es el objetivo de la
+   pantalla: la única que se mueve, y a la que apunta la tira de arriba. Cada
+   2,6 s sale de su borde un anillo que se agranda y se apaga — la señal de
+   "pulsa aquí" de un juego.
+
+   El anillo es un pseudo-elemento aparte A PROPÓSITO, por dos razones:
+     · animar la casilla entera le quitaría el :hover (una animación infinita
+       gana al transform del hover y dejaría de crecer al pasar por encima);
+     · así el color y la opacidad de la casilla no se tocan nunca, y el número
+       se lee exactamente igual de bien en todo momento. Nada parpadea.     */
+.dia.reclama{
+  overflow: visible; z-index: 6;
+  border-color: var(--tono-luz, var(--acento-luz));
+  background: linear-gradient(157deg,
+              color-mix(in oklab, var(--tono, var(--acento)) 40%, transparent),
+              color-mix(in oklab, var(--tono, var(--acento)) 9%, transparent));
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 22%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 0 2px var(--din-2),
+              0 0 0 4px color-mix(in oklab, var(--tono, var(--acento)) 55%, transparent),
+              0 0 26px color-mix(in oklab, var(--tono, var(--acento)) 60%, transparent);
+}
+.dia.reclama:hover{
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 26%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 0 2px var(--din-2),
+              0 0 0 4px var(--tono-luz, var(--acento-luz)),
+              0 0 36px color-mix(in oklab, var(--tono, var(--acento)) 75%, transparent);
+}
+.dia.reclama .cifra{ color: var(--texto) }
+.dia.reclama::before{
+  content: ""; position: absolute; inset: -4px; z-index: 0; pointer-events: none;
+  border: 2px solid var(--tono-luz, var(--acento-luz));
+  animation: reclamo 2.6s var(--curva-cine) infinite;
+}
+/* Con el anillo puesto, el puntito de "hoy" sobra: la casilla entera ya lo dice. */
+.dia.reclama::after{ display: none }
+/* Y el nudo del paquete de hoy brilla más que el de los demás días. */
+.dia.reclama .lazo::after{
+  width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px;
+  box-shadow: 0 0 16px var(--tono-luz, var(--acento-luz)),
+              0 0 32px color-mix(in oklab, var(--tono, var(--acento)) 55%, transparent);
+}
+
+/* ── escena de canción ────────────────────────────────────────────────── */
+/* Las capas de la escena, de abajo arriba:
+     .halo    la carátula desenfocada
+     .manto   el velo que la apaga para que el texto se lea
+     .amb     el ambiente (aura, marco, notas)   ← lo monta ambiente.js
+     .desliza lo único que hace scroll
+   El halo y el manto NO están dentro de lo que scrollea: si lo estuvieran,
+   el desenfoque tendría que repintarse en cada gesto de rueda. */
+.escena{
+  position: fixed; inset: 0; z-index: 60; overflow: hidden;
+  height: 100dvh;                       /* dvh y no vh: la barra del navegador
+                                           del móvil no corta el final */
+  background: var(--din-2);
+  animation: escena-entra .42s var(--curva-cine) both;
+}
+/* Al cerrar y volver a abrir deprisa quedaban las dos clases puestas, y ganaba
+   la de salir por ir después en la hoja: la escena se abría invisible. Toda
+   entrada limpia su salida — de eso se encarga el motor. */
+.escena.saliendo{ animation: escena-sale .32s ease-in both }
+
+.escena .halo{
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: blur(70px) saturate(1.4); opacity: .34; transform: scale(1.3);
+}
+.escena .manto{
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+              color-mix(in oklab, var(--din-2) 70%, transparent),
+              color-mix(in oklab, var(--din-2) 96%, transparent));
+}
+.escena .desliza{
+  position: absolute; inset: 0; z-index: 3; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* La columna del contenido es el contenedor de referencia de la escena: la
+   carátula y los títulos se miden contra ELLA, no contra la ventana. */
+.escena .dentro{
+  container-type: inline-size; container-name: escena;
+  position: relative;
+  max-width: 520px; margin: 0 auto; padding: 18px var(--paso) 64px;
+}
+.salir{
+  position: sticky; top: 12px; margin-left: auto; display: block; width: 38px; height: 38px;
+  border-radius: 50%; background: color-mix(in oklab, var(--texto) 10%, transparent);
+  font-size: 17px; line-height: 38px; text-align: center; z-index: 5;
+  transition: background .18s ease, transform .3s var(--curva);
+}
+.salir:hover{ background: color-mix(in oklab, var(--texto) 20%, transparent); transform: rotate(90deg) }
+.fechita{
+  text-align: center; font-size: 10px; font-weight: 600; letter-spacing: .26em;
+  text-transform: uppercase; color: var(--acento); margin: 2px 0 22px;
+}
+.funda{
+  width: min(clamp(200px, 62cqw, 300px), 46dvh); aspect-ratio: 1;
+  margin: 0 auto 26px; border-radius: 8px; overflow: hidden; position: relative;
+  box-shadow: 0 24px 56px rgba(0,0,0,.7);
+}
+.funda img{ width: 100%; height: 100%; object-fit: cover; display: block }
+
+/* ── el envoltorio ──────────────────────────────────────────────────────
+   La carátula llega envuelta: dos medios de papel, la cinta cruzada y el
+   nudo. Todo sale de la paleta del día, así que el papel de cada canción es
+   de un color distinto sin haber escrito ni un color a mano.
+   Quien lo abre son las animaciones de efectos.css; quien lo QUITA es el
+   motor, con un temporizador, para que un navegador sin animaciones no deje
+   el regalo cerrado.                                                     */
+.funda .regalo{ position: absolute; inset: 0; z-index: 3; pointer-events: none }
+.funda .regalo .papel{
+  position: absolute; inset: 0;
+  background: linear-gradient(152deg,
+              color-mix(in oklab, var(--acento) 58%, var(--din-1)),
+              color-mix(in oklab, var(--acento-tenue) 74%, var(--din-2)) 58%,
+              color-mix(in oklab, var(--acento) 30%, var(--din-2)));
+}
+.regalo.corte-v .papel.a{ clip-path: inset(0 50% 0 0) }
+.regalo.corte-v .papel.b{ clip-path: inset(0 0 0 50%) }
+.regalo.corte-h .papel.a{ clip-path: inset(0 0 50% 0) }
+.regalo.corte-h .papel.b{ clip-path: inset(50% 0 0 0) }
+/* Las cintas se centran con inset y NO con transform: el transform lo
+   necesitan enteros para encogerse al abrirse. Un elemento, un transform. */
+.funda .regalo .cinta{
+  position: absolute;
+  background: color-mix(in oklab, var(--texto) 86%, var(--acento-luz));
+  box-shadow: 0 0 18px color-mix(in oklab, var(--din-2) 62%, transparent);
+}
+.funda .regalo .cinta.v{ top: 0; bottom: 0; left: 44.5%; width: 11% }
+.funda .regalo .cinta.h{ left: 0; right: 0; top: 44.5%; height: 11% }
+.funda .regalo .nudo{
+  position: absolute; left: 38%; top: 38%; width: 24%; height: 24%; border-radius: 50%;
+  background: color-mix(in oklab, var(--texto) 92%, var(--acento-luz));
+  box-shadow: 0 0 26px color-mix(in oklab, var(--acento-luz) 55%, transparent),
+              0 4px 12px color-mix(in oklab, var(--din-2) 60%, transparent);
+}
+.funda .surco{
+  width: 100%; height: 100%; display: grid; place-items: center;
+  font-family: var(--display); font-size: 44px; font-weight: 300;
+  color: color-mix(in oklab, var(--texto) 62%, transparent);
+}
+.titular{
+  font-family: var(--display); font-weight: 400; font-size: clamp(25px, 5.4cqw, 34px);
+  text-align: center; line-height: 1.12; margin: 0; letter-spacing: -.012em; text-wrap: balance;
+}
+.firma{
+  text-align: center; color: var(--texto-tenue); font-size: 13px; font-weight: 500;
+  letter-spacing: .11em; text-transform: uppercase; margin: 9px 0 0;
+}
+
+/* ── reproductor ──────────────────────────────────────────────────────── */
+.consola{ margin: 30px 0 0 }
+/* La barra: un canal hundido y, dentro, un degradado que va de lo apagado a
+   lo encendido. Sin agarradera redonda — ese círculo era lo único con curva en
+   toda la consola y se veía pegado de otra app. Lo que marca dónde vas es el
+   propio filo del relleno, un pixel encendido de dos de ancho. */
+.riel{
+  height: 10px; border-radius: 0; position: relative; cursor: pointer;
+  border: 2px solid color-mix(in oklab, var(--texto) 13%, transparent);
+  background: var(--din-2);
+  box-shadow: inset 1px 1px 0 var(--din-2),
+              inset -1px -1px 0 color-mix(in oklab, var(--texto) 9%, transparent);
+}
+.riel .avance{
+  height: 100%; width: 0; border-radius: 0; position: relative;
+  background: linear-gradient(90deg,
+              var(--acento-tenue) 0%, var(--acento) 52%, var(--acento-luz) 100%);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--acento) 50%, transparent);
+}
+.riel .avance::after{
+  content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--acento-luz);
+  box-shadow: 0 0 8px var(--acento-luz);
+}
+.riel:hover .avance::after{ width: 3px }
+.marcas{
+  display: flex; justify-content: space-between; margin-top: 9px;
+  font-size: 11px; color: var(--texto-mudo); font-variant-numeric: tabular-nums; letter-spacing: .05em;
+}
+.mandos{ display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px }
+
+/* ── el play/pausa ────────────────────────────────────────────────────────
+   Cuadrado y biselado, como los mandos del reproductor y como las flechas del
+   mes: la luz arriba a la izquierda y la sombra abajo a la derecha es TODO el
+   truco del relieve de 8 bits. Al pulsarlo, las dos se cambian de sitio y el
+   botón se hunde de verdad.
+
+   Antes era un círculo relleno de degradado con un ▶ de fuente dentro: la
+   única curva de toda la consola, y el triángulo salía con las esquinas
+   redondeadas de la tipografía. */
+.tecla{
+  width: 62px; height: 50px; border-radius: 0;
+  border: 2px solid var(--acento); color: var(--acento-luz);
+  background: linear-gradient(180deg,
+              color-mix(in oklab, var(--acento) 26%, transparent),
+              color-mix(in oklab, var(--acento) 7%, transparent));
+  display: grid; place-items: center;
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 30%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 18px color-mix(in oklab, var(--acento) 24%, transparent);
+  transition: background .18s ease, box-shadow .18s ease, transform .12s steps(2, end);
+}
+.tecla:hover{
+  background: linear-gradient(180deg,
+              color-mix(in oklab, var(--acento) 42%, transparent),
+              color-mix(in oklab, var(--acento) 13%, transparent));
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 40%, transparent),
+              inset -1px -1px 0 var(--din-2),
+              0 0 28px color-mix(in oklab, var(--acento) 45%, transparent);
+}
+.tecla:active{
+  transform: translateY(2px);
+  box-shadow: inset -1px -1px 0 color-mix(in oklab, var(--texto) 22%, transparent),
+              inset 1px 1px 0 var(--din-2);
+}
+/* El ▶ dibujado a escalones. El elemento tiene que ser CUADRADO: clip-path va
+   en porcentajes de la caja, y en un rectángulo los peldaños salen torcidos.
+   Los saltos van de 12,5 en 12,5 (un octavo) porque ese es el "pixel". */
+.tecla .icono{
+  width: 22px; height: 22px; background: currentColor;
+  clip-path: polygon(
+    0% 0%,     25% 0%,    25% 12.5%, 50% 12.5%, 50% 25%,   75% 25%,
+    75% 37.5%, 100% 37.5%, 100% 62.5%, 75% 62.5%, 75% 75%,  50% 75%,
+    50% 87.5%, 25% 87.5%, 25% 100%,  0% 100%);
+  filter: drop-shadow(0 0 5px color-mix(in oklab, var(--acento) 55%, transparent));
+}
+/* La pausa: dos barras rectas, hechas con el propio relleno. Sin clip-path. */
+.tecla.sonando .icono{
+  clip-path: none;
+  background: linear-gradient(90deg,
+              currentColor 0 34%, transparent 34% 66%, currentColor 66% 100%);
+}
+
+/* Los saltos de diez segundos, con el mismo bisel para que el trío se lea
+   como un mando y no como un botón con dos enlaces al lado. */
+.brinco{
+  font-family: var(--pixel); font-size: 8px; letter-spacing: .05em; line-height: 1;
+  padding: 12px 10px; border-radius: 0; color: var(--texto-mudo);
+  border: 2px solid color-mix(in oklab, var(--acento) 30%, transparent);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 12%, transparent),
+              inset -1px -1px 0 var(--din-2);
+  transition: color .18s ease, border-color .18s ease, transform .12s steps(2, end);
+}
+.brinco:hover{ color: var(--acento); border-color: var(--acento) }
+.brinco:active{ transform: translateY(2px) }
+.sintono{
+  text-align: center; font-size: 12px; color: var(--texto-tenue); line-height: 1.7;
+  border: 1px dashed var(--borde); border-radius: 11px; padding: 15px 16px; margin: 30px 0 0;
+}
+.sintono code{
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  color: var(--acento-luz); background: color-mix(in oklab, var(--acento) 10%, transparent);
+  padding: 1px 5px; border-radius: 4px;
+}
+
+/* ── letra ────────────────────────────────────────────────────────────── */
+/* La letra se lee EN ESPAÑOL. El original va debajo de cada verso, apagado y
+   escondido: está ahí para cuando quieras comprobar cómo suena de verdad, no
+   para leerlo a la vez. Lo enseña el botón de la esquina. */
+.letra{ margin-top: 34px; position: relative }
+/* Lleva fondo propio a propósito: flota SOBRE la letra, y sin él las dos
+   cosas se enredaban y parecía un verso más con recuadro. */
+.idioma{
+  position: absolute; top: -6px; right: 0; z-index: 3;
+  font-family: var(--pixel); font-size: 7px; letter-spacing: .08em; line-height: 1;
+  text-transform: uppercase; padding: 8px 9px; border-radius: 0;
+  color: var(--texto-mudo); background: color-mix(in oklab, var(--din-2) 88%, transparent);
+  border: 2px solid color-mix(in oklab, var(--acento) 25%, transparent);
+  box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 10%, transparent),
+              inset -1px -1px 0 var(--din-2);
+  transition: color .18s ease, border-color .18s ease, transform .12s steps(2, end);
+}
+.idioma:hover{ color: var(--acento); border-color: var(--acento) }
+.idioma:active{ transform: translateY(2px) }
+/* Escondido de verdad (display:none), no transparente: si solo bajara la
+   opacidad seguiría ocupando su alto y la letra quedaría con el doble de
+   aire entre versos sin que se viera por qué. */
+.original{ display: none }
+.letra.con-original .original{
+  display: block; text-align: center; cursor: default;
+  font-family: var(--lectura); font-size: 17px; line-height: 1.25;
+  letter-spacing: .04em; color: var(--texto-mudo); opacity: .62;
+  padding: 0 4px 6px;
+}
+/* El original del verso que suena se despierta un poco. Va con `+` porque
+   cada .original es hermano inmediato de SU verso. */
+.letra.con-original .verso.viva + .original{ color: var(--texto-tenue); opacity: .9 }
+.versos{
+  /* IMPORTANTE: este position:relative hace que .versos sea el contenedor de
+     referencia de los versos. Sin él, offsetTop se mide desde .dentro (por
+     encima de la carátula y el reproductor) y el autoscroll manda la letra al
+     fondo de golpe. No lo quites. */
+  position: relative;
+  max-height: 322px; overflow-y: auto; scroll-behavior: smooth; padding: 58px 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent);
+  scrollbar-width: none;
+}
+.versos::-webkit-scrollbar{ width: 0 }
+.verso{
+  font-family: var(--lectura); font-weight: 400; font-size: 27px; line-height: 1.35;
+  text-align: center; color: var(--texto-mudo); padding: 7px 4px; cursor: pointer;
+  position: relative;
+  transition:
+    color .3s ease-out,
+    text-shadow .3s ease-out,
+    transform .6s var(--curva),          /* el rebote va aquí */
+    opacity .4s ease-out;
+}
+.verso.ido{ color: var(--texto-tenue); opacity: .5 }
+.verso.viva{
+  color: var(--acento-luz); transform: scale(1.055); opacity: 1; font-weight: 400;
+  text-shadow: 0 0 24px color-mix(in oklab, var(--acento) 34%, transparent);
+}
+
+/* ── KARAOKE: el verso vivo se tiñe palabra a palabra ─────────────────────
+   fx.js reparte el verso por longitud y va poniendo .sung (ya sonó) y
+   .cantando (suena AHORA). Aquí solo se pinta `color` y `text-shadow`, y eso
+   no es una economía: transform, opacity y animation son los tres canales de
+   los efectos de entrada de la línea (vfx-sube, vfx-neon…), y tocarlos deja la
+   primera palabra de cada verso congelada a medias.
+
+   Los tres tonos cuentan la frase entera de un vistazo:
+     lo que falta  → apagado, se lee pero no llama
+     ya cantado    → el acento, encendido; es el "relleno" del karaoke
+     la de ahora   → el texto en claro y el halo grande: el punto exacto  */
+.letra:not(.quieta) .verso.viva .p{
+  color: var(--texto-mudo);
+  transition: color .16s linear, text-shadow .16s linear;
+}
+.letra:not(.quieta) .verso.viva .p.sung{
+  color: var(--acento-luz);
+  text-shadow: 0 0 8px color-mix(in oklab, var(--acento) 55%, transparent),
+               0 0 20px color-mix(in oklab, var(--acento) 28%, transparent);
+}
+.letra:not(.quieta) .verso.viva .p.cantando{
+  color: var(--texto);
+  text-shadow: 0 0 10px color-mix(in oklab, var(--acento) 75%, transparent),
+               0 0 26px color-mix(in oklab, var(--acento) 45%, transparent),
+               0 0 50px color-mix(in oklab, var(--acento) 22%, transparent);
+}
+/* La palabra más larga sigue mandando aunque la esté tiñendo el karaoke: sin
+   esto, el teñido le quitaba su halo y la frase volvía a leerse como una masa. */
+.letra:not(.quieta) .verso.viva .p-grande.sung,
+.letra:not(.quieta) .verso.viva .p-grande.cantando{
+  text-shadow: 0 0 14px color-mix(in oklab, var(--acento) 75%, transparent),
+               0 0 34px color-mix(in oklab, var(--acento) 45%, transparent),
+               0 0 64px color-mix(in oklab, var(--acento) 25%, transparent);
+}
+
+.letra.quieta .versos{ max-height: none; padding: 0; mask-image: none; -webkit-mask-image: none }
+.letra.quieta .verso{ color: var(--texto); opacity: .82; cursor: default; font-size: 24px }
+
+/* ── pantalla ancha: la canción a un lado, la letra al otro ───────────────
+   A partir de 1000 px la escena se parte en dos, como un reproductor grande:
+   a la DERECHA el disco, los mandos y tu nota, quietos; a la IZQUIERDA la
+   letra, grande y desplazándose sola. Por debajo de ese ancho —y en cualquier
+   móvil— todo vuelve a la columna única de siempre.
+
+   El `:has(.letra)` es a propósito: un día sin letra no debe partirse en dos,
+   porque dejaría media pantalla vacía. Y si el navegador es viejo y no
+   entiende `:has`, se salta la regla entera y se queda la columna única, que
+   funciona siempre. Falla hacia lo que se ve.                              */
+@media (min-width: 1000px){
+  .escena .dentro:has(.letra){
+    max-width: min(1280px, 94vw);
+    min-height: 100dvh;
+    padding: 46px clamp(24px, 3vw, 56px) 40px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr);
+    grid-template-rows: auto auto auto;
+    align-content: center;
+    column-gap: clamp(30px, 5vw, 82px);
+  }
+  /* Colocación explícita y no por orden del HTML: así da igual que la consola
+     se cambie por el aviso de "no encuentro el mp3" — cae en su sitio igual. */
+  .dentro:has(.letra) .letra   { grid-column: 1; grid-row: 1 / span 3; align-self: center;
+                                 margin-top: 0; min-width: 0 }
+  .dentro:has(.letra) .cabeza  { grid-column: 2; grid-row: 1 }
+  .dentro:has(.letra) .consola,
+  .dentro:has(.letra) .sintono { grid-column: 2; grid-row: 2 / span 2 ; align-self: start }
+
+  /* La × se sale de la rejilla para no gastar una casilla. */
+  .dentro:has(.letra) .salir{ position: absolute; top: 14px; right: 0; margin-left: 0 }
+
+  /* El disco manda en su columna, pero el que decide de verdad es el ALTO:
+     en un portátil de 700 px la columna entera —disco, mandos y nota— tiene
+     que caber sin que la nota se quede debajo del borde. Por eso el ancho
+     de la carátula se mide en dvh y no en px. */
+  .dentro:has(.letra) .fechita { margin-bottom: 15px }
+  .dentro:has(.letra) .funda   { width: min(100%, 42dvh); margin-bottom: 20px }
+  .dentro:has(.letra) .consola { margin-top: 20px }
+
+  /* La letra, al modo de los reproductores grandes: alineada a la izquierda,
+     mucho cuerpo, y la línea viva crece HACIA LA DERECHA (transform-origin) en
+     vez de ensancharse por los dos lados, que descolocaba el margen. */
+  .dentro:has(.letra) .versos{ max-height: min(76dvh, 700px); padding: 40px 0 }
+  .dentro:has(.letra) .letra.quieta .versos{
+    max-height: min(76dvh, 700px); overflow-y: auto; padding: 40px 0;
+  }
+  .dentro:has(.letra) .verso{
+    text-align: left; padding: 9px 2px;
+    font-size: clamp(32px, 3.2vw, 52px); line-height: 1.22;
+    transform-origin: left center;
+  }
+  .dentro:has(.letra) .verso.viva{ transform: scale(1.022) }
+  .dentro:has(.letra) .letra.con-original .original{ text-align: left; font-size: 20px }
+  .dentro:has(.letra) .idioma{ top: -2px; right: 0 }
+  .dentro:has(.letra) .letra.quieta .verso{ font-size: clamp(27px, 2.3vw, 36px) }
+}
+
+/* ── pantallas estrechas ──────────────────────────────────────────────── */
+@container hoja (max-width: 520px){
+  .timon{ margin-bottom: 16px }
+  .tira{ gap: 10px; padding: 11px 12px; margin-bottom: 16px }
+  .llamada{ padding: 11px 12px }
+  /* Aquí la tira se parte en dos filas y la cuenta cae sola a la segunda:
+     que caiga a la derecha, como el marcador de un juego, y no suelta a la
+     izquierda debajo de la frase. */
+  .tira .cuenta{ margin-left: auto }
+  .rejilla-mes, .semana{ gap: 5px }
+  /* Aqui la casilla mide unos 47 px. El nudo se come el paquete entero y
+     la cifra choca con la cinta: se queda la cruz, mas fina, y ya. */
+  .dia.puesto .lazo::after{ display: none }
+  .dia .lazo{
+    background:
+      linear-gradient(to right, transparent calc(50% - 1px),
+        var(--tono, var(--acento)) calc(50% - 1px),
+        var(--tono, var(--acento)) calc(50% + 1px),
+        transparent calc(50% + 1px)),
+      linear-gradient(to bottom, transparent calc(50% - 1px),
+        var(--tono, var(--acento)) calc(50% - 1px),
+        var(--tono, var(--acento)) calc(50% + 1px),
+        transparent calc(50% + 1px));
+  }
+  .dia.puesto .cifra, .dia.visto .cifra{ font-size: 21px; top: 3px; left: 5px }
+  .dia.echado .cifra{ font-size: 19px }
+  /* El nudo desaparece en las casillas pequeñas, MENOS en la de hoy: es
+     justo la que hay que ver desde el otro lado de la habitación. */
+  .dia.reclama .lazo::after{
+    display: block; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-width: 2px;
+  }
+  /* Entre casilla y casilla hay 5 px: el aro se queda en 3 para no tocarse
+     con la de al lado. */
+  .dia.reclama{
+    box-shadow: inset 1px 1px 0 color-mix(in oklab, var(--texto) 22%, transparent),
+                inset -1px -1px 0 var(--din-2),
+                0 0 0 1px var(--din-2),
+                0 0 0 3px color-mix(in oklab, var(--tono, var(--acento)) 55%, transparent),
+                0 0 20px color-mix(in oklab, var(--tono, var(--acento)) 60%, transparent);
+  }
+}
+@media (max-width: 520px){
+  .versos{ max-height: 268px; padding: 48px 0 }
+  .verso{ font-size: 25px }
+}
+/* Con el dedo no hay :hover que valga, y los objetivos tienen que ser grandes. */
+.cal-tactil .dia.puesto:hover, .cal-tactil .dia.visto:hover{ transform: none }
+.cal-tactil .brinco{ padding: 10px 6px }
+
+/* ── quien pide menos movimiento, menos movimiento tiene ──────────────── */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

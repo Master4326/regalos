@@ -1,0 +1,406 @@
+/* ═════════════════════════════════════════════════════════════════════════
+   efectos.css  —  el catálogo de animaciones
+   ─────────────────────────────────────────────────────────────────────────
+   El reparto (quién se lleva cuál) está en js/fx.js. Aquí solo están los
+   movimientos. Para añadir un efecto: una fila en el manifiesto de fx.js y su
+   @keyframes aquí. Nada más.
+
+   TRES REGLAS QUE AQUÍ NO SE ROMPEN
+   ---------------------------------
+   1. El último `filter` de un keyframe es `none`, NUNCA `blur(0)`. Se ven
+      igual, pero un elemento con filtro se pinta recortado a su región de
+      filtro, y con blur(0) esa región es cero: el resplandor de una palabra
+      sale cortado en un rectángulo.
+
+   2. La base en CSS está VISIBLE y las animaciones usan `fill-mode: backwards`
+      (el estado oculto lo pone el keyframe `from`, solo durante el retardo).
+      Si la base fuera `opacity: 0`, una animación cancelada a mitad dejaría el
+      texto invisible para siempre. Se falla hacia lo visible, siempre.
+      Y `backwards` en vez de `both` a propósito: con `both` el último keyframe
+      SE QUEDA puesto y le gana al `:hover`, así que las casillas del mes ya no
+      crecerían al pasar el ratón.
+
+   3. Las salidas son más cortas que las entradas (0.30–0.35 s frente a
+      0.42–0.70 s). Nadie quiere esperar a que algo se vaya.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── lo único que respira en toda la pantalla ─────────────────────────────
+   Marca dónde estás: el mes de hoy y el día de hoy. Y solo ellos: veinte
+   cosas latiendo a la vez son una guirnalda de feria, no una marca. */
+@keyframes barra-viva{
+  0%, 100%{ opacity: 1;  transform: scaleY(1) }
+  50%     { opacity: .55; transform: scaleY(.72) }
+}
+
+/* El anillo de "ábreme" de la casilla de hoy. NO es un parpadeo: nace pegado
+   al borde, se agranda y se apaga, y vuelve a nacer. Entra y sale con opacidad
+   0 en los dos extremos justamente para que no haya ningún salto de brillo,
+   y no toca ni el color ni la opacidad de la casilla que envuelve. */
+@keyframes reclamo{
+  0%  { transform: scale(.98); opacity: 0 }
+  18% { opacity: .8 }
+  78% { transform: scale(1.4); opacity: 0 }
+  100%{ transform: scale(1.4); opacity: 0 }
+}
+
+/* ── la escena entera ─────────────────────────────────────────────────── */
+@keyframes escena-entra{
+  from{ opacity: 0; transform: scale(.975) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes escena-sale{
+  from{ opacity: 1; transform: none }
+  to  { opacity: 0; transform: scale(.985) }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ENTRADA DE LA REJILLA DEL MES
+   El mes entero elige UNA forma de entrar (js/fx.js) y las casillas se
+   escalonan dentro de ella con --i. Treinta y una animaciones distintas a la
+   vez serían ruido; una sola, escalonada, es una idea.
+   ═════════════════════════════════════════════════════════════════════════ */
+.rejilla-mes .dia{
+  animation-duration: .5s;
+  animation-timing-function: var(--curva);
+  animation-fill-mode: backwards;
+  animation-delay: calc(var(--i, 0) * 16ms);
+}
+.rejilla-mes.rej-sube    .dia { animation-name: rej-sube }
+.rejilla-mes.rej-abre    .dia { animation-name: rej-abre }
+.rejilla-mes.rej-baraja  .dia { animation-name: rej-baraja }
+.rejilla-mes.rej-lejos   .dia { animation-name: rej-lejos;
+                                animation-duration: .62s;
+                                animation-timing-function: var(--curva-cine) }
+
+@keyframes rej-sube{
+  from{ opacity: 0; transform: translateY(12px) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes rej-abre{
+  from{ opacity: 0; transform: scale(.84) }
+  60% { opacity: 1; transform: scale(1.03) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes rej-baraja{
+  from{ opacity: 0; transform: translate(-10px, -8px) rotate(-3deg) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes rej-lejos{
+  from{ opacity: 0; transform: scale(1.16); filter: blur(7px) }
+  to  { opacity: 1; transform: none;        filter: none }   /* none, no blur(0) */
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ENTRADA DE LA ESCENA DE UN DÍA
+   semilla(día, mes) → cada día tiene SU forma de abrirse, y siempre la misma.
+   Vuelves al 14 de mayo y el 14 de mayo se abre como lo recordabas.
+   ═════════════════════════════════════════════════════════════════════════ */
+.escena .cabeza{
+  animation-duration: .72s;
+  animation-timing-function: var(--curva-cine);
+  animation-fill-mode: backwards;
+  animation-delay: .06s;
+}
+.escena.efx-enfoca  .cabeza{ animation-name: efx-enfoca }
+.escena.efx-sube    .cabeza{ animation-name: efx-sube }
+.escena.efx-sello   .cabeza{ animation-name: efx-sello; animation-timing-function: var(--curva) }
+.escena.efx-cortina .cabeza{ animation-name: efx-cortina }
+.escena.efx-abanico .cabeza{ animation-name: efx-abanico; animation-timing-function: var(--curva) }
+.escena.efx-respira .cabeza{ animation-name: efx-respira; animation-duration: .95s }
+
+@keyframes efx-enfoca{
+  from{ opacity: 0; transform: scale(1.05); filter: blur(18px) }
+  to  { opacity: 1; transform: none;        filter: none }
+}
+@keyframes efx-sube{
+  from{ opacity: 0; transform: translateY(34px) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes efx-sello{
+  from{ opacity: 0; transform: scale(1.4) }
+  62% { opacity: 1; transform: scale(.975) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes efx-cortina{
+  from{ opacity: .2; clip-path: inset(0 0 100% 0); transform: translateY(14px) }
+  to  { opacity: 1;  clip-path: inset(0 0 0 0);    transform: none }
+}
+@keyframes efx-abanico{
+  from{ opacity: 0; transform: rotate(-3.5deg) scale(.93) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes efx-respira{
+  from{ opacity: 0; transform: scale(.9) }
+  to  { opacity: 1; transform: none }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   LA LETRA, PALABRA A PALABRA
+   Solo se anima la línea VIVA. Las demás están ahí, quietas y legibles: la
+   base es visible y el keyframe `from` es el que esconde.
+   Al volver a marcar una línea como viva, la animación arranca de nuevo sola —
+   por eso saltar hacia atrás en la canción la vuelve a revelar.
+   ═════════════════════════════════════════════════════════════════════════ */
+.verso{ perspective: 620px }
+/* La palabra entera, cuando el efecto reparte LETRA a letra. Es un bloque
+   atómico: el navegador no puede cortar dentro y la línea deja de partir las
+   palabras por la mitad.
+   El `perspective: inherit` no es adorno: la perspectiva de un elemento vale
+   para sus HIJOS, y al meter este envoltorio en medio las letras pasaban a ser
+   nietas de .verso. Sin esto, los efectos que giran en 3D —voltea, gira— se
+   quedaban planos. */
+.verso .pal{
+  display: inline-block; white-space: nowrap; perspective: inherit;
+}
+.verso .p{
+  display: inline-block;              /* base VISIBLE: sin opacity: 0 aquí */
+  will-change: transform, opacity;
+}
+.verso.viva .p{
+  animation-duration: .55s;
+  animation-timing-function: var(--curva);
+  animation-fill-mode: backwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* La palabra más larga se lleva el tamaño y el brillo. Es lo que evita que la
+   frase se lea como una masa uniforme: manda UNA, nunca dos. */
+.verso.viva .p-grande{
+  font-size: 1.14em; font-weight: 400;
+  text-shadow: 0 0 18px color-mix(in oklab, var(--acento) 55%, transparent);
+}
+
+.verso.viva.vfx-sube     .p{ animation-name: vfx-sube }
+.verso.viva.vfx-desliza  .p{ animation-name: vfx-desliza }
+.verso.viva.vfx-ola      .p{ animation-name: vfx-ola }
+.verso.viva.vfx-brisa    .p{ animation-name: vfx-brisa; animation-duration: .8s;
+                             animation-timing-function: var(--curva-cine) }
+.verso.viva.vfx-columpio .p{ animation-name: vfx-columpio; transform-origin: 50% 0 }
+.verso.viva.vfx-elastico .p{ animation-name: vfx-elastico }
+.verso.viva.vfx-zoom     .p{ animation-name: vfx-zoom; animation-duration: .62s;
+                             animation-timing-function: var(--curva-cine) }
+.verso.viva.vfx-voltea   .p{ animation-name: vfx-voltea; transform-origin: 50% 100% }
+.verso.viva.vfx-teclea   .p{ animation-name: vfx-teclea }
+.verso.viva.vfx-cae      .p{ animation-name: vfx-cae }
+.verso.viva.vfx-neon     .p{ animation-name: vfx-neon }
+.verso.viva.vfx-gira     .p{ animation-name: vfx-gira; transform-origin: 50% 50% }
+
+/* Los efectos que van LETRA a letra necesitan turnos más cortos: con la
+   duración de palabra, una frase de cuarenta letras tardaría una eternidad. */
+.verso.viva.vl-teclea .p,
+.verso.viva.vl-cae    .p,
+.verso.viva.vl-neon   .p,
+.verso.viva.vl-gira   .p{ animation-duration: .34s }
+
+@keyframes vfx-sube{
+  from{ opacity: 0; transform: translateY(15px); filter: blur(3px) }
+  to  { opacity: 1; transform: none;             filter: none }
+}
+@keyframes vfx-desliza{
+  from{ opacity: 0; transform: translateX(calc(var(--sx, 1) * 28px)) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes vfx-ola{
+  from{ opacity: 0; transform: translateY(20px) scale(.9) }
+  58% { opacity: 1; transform: translateY(-6px) scale(1.05) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes vfx-brisa{
+  from{ opacity: 0; transform: translateY(7px); filter: blur(5px) }
+  to  { opacity: 1; transform: none;            filter: none }
+}
+@keyframes vfx-columpio{
+  from{ opacity: 0; transform: translateY(-14px) rotate(calc(var(--sx, 1) * 15deg)) }
+  62% { opacity: 1; transform: translateY(0)     rotate(calc(var(--sx, 1) * -4deg)) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes vfx-elastico{
+  from{ opacity: 0; transform: scale(.42, 1.34) }
+  55% { opacity: 1; transform: scale(1.14, .9) }
+  to  { opacity: 1; transform: none }
+}
+@keyframes vfx-zoom{
+  from{ opacity: 0; transform: scale(2.3); filter: blur(9px) }
+  to  { opacity: 1; transform: none;       filter: none }
+}
+@keyframes vfx-voltea{
+  from{ opacity: 0; transform: rotateX(-86deg) translateY(9px) }
+  to  { opacity: 1; transform: none }
+}
+/* El paso discreto es lo que hace que se lea "tecleado" y no "difuminado". */
+@keyframes vfx-teclea{
+  from{ opacity: 0 }
+  to  { opacity: 1 }
+}
+.verso.viva.vfx-teclea .p{ animation-timing-function: steps(2, end) }
+@keyframes vfx-cae{
+  from{ opacity: 0; transform: translateY(-28px) }
+  66% { opacity: 1; transform: translateY(5px) }
+  84% { opacity: 1; transform: translateY(-2px) }
+  to  { opacity: 1; transform: none }
+}
+/* El parpadeo de un letrero de neón al encenderse. Dura un tercio de segundo y
+   es TEXTO que entra, no el fondo: el fondo no parpadea nunca. */
+@keyframes vfx-neon{
+  0%  { opacity: 0 }
+  20% { opacity: .85 }
+  30% { opacity: .1 }
+  45% { opacity: .95 }
+  55% { opacity: .25 }
+  to  { opacity: 1 }
+}
+@keyframes vfx-gira{
+  from{ opacity: 0; transform: rotateY(-92deg) }
+  to  { opacity: 1; transform: none }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   EL AMBIENTE
+   Vive por debajo del texto y no captura el ratón. NADA de aquí parpadea:
+   son derivas de 23 a 41 segundos. Las duraciones no son redondas y son
+   primas entre sí a propósito, para que la combinación de las cuatro manchas
+   tarde muchísimo en repetirse y no se le vea nunca el bucle.
+   ═════════════════════════════════════════════════════════════════════════ */
+.amb{
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden;
+}
+.amb-mancha{
+  position: absolute; left: var(--mx); top: var(--my);
+  width: 46%; height: 46%; margin: -23% 0 0 -23%;
+  border-radius: 50%;
+  filter: blur(64px);
+  mix-blend-mode: screen;
+  /* La opacidad la lleva --energia, que ambiente.js escribe UNA vez por frame
+     en el contenedor y heredan las cuatro. Se mueve en segundos, no en frames. */
+  opacity: calc(.08 + var(--energia, .3) * .13);
+  animation: amb-deriva var(--mdur) ease-in-out var(--mret) infinite alternate;
+}
+.amb-a{ background: radial-gradient(circle, var(--acento) 0%, transparent 68%) }
+.amb-b{ background: radial-gradient(circle, var(--segunda) 0%, transparent 68%) }
+.amb-c{ background: radial-gradient(circle, var(--acento-tenue) 0%, transparent 68%);
+        width: 38%; height: 38%; margin: -19% 0 0 -19% }
+.amb-d{ background: radial-gradient(circle, var(--acento-luz) 0%, transparent 70%);
+        width: 30%; height: 30%; margin: -15% 0 0 -15% }
+@keyframes amb-deriva{
+  from{ transform: translate(-6%, 4%) scale(1) }
+  to  { transform: translate(7%, -5%) scale(1.18) }
+}
+
+/* El marco de esquinas: cuatro divs con dos bordes cada uno. QUIETOS.
+   Cuando latían, encenderse los cuatro a la vez se leía como un cuadrado que
+   aparecía por detrás del texto — que es justo lo que molesta. */
+.amb-esquina{
+  position: absolute;
+  width: clamp(18px, 2.4cqw, 34px); height: clamp(18px, 2.4cqw, 34px);
+  border: 1px solid var(--acento);
+  opacity: .14;
+}
+.amb-esquina.ar{ top: 10px;    left: 10px;  border-right: 0; border-bottom: 0 }
+.amb-esquina.ad{ top: 10px;    right: 10px; border-left: 0;  border-bottom: 0 }
+.amb-esquina.br{ bottom: 10px; left: 10px;  border-right: 0; border-top: 0 }
+.amb-esquina.bd{ bottom: 10px; right: 10px; border-left: 0;  border-top: 0 }
+
+/* Las notas que suben mientras suena. Todas sus variables las escribe el JS
+   UNA vez, al crearlas: la animación la lleva el CSS entera. */
+.amb-nota{
+  position: absolute; bottom: -40px; left: var(--nx, 50%);
+  font-size: var(--nfs, 18px);
+  color: var(--acento);
+  text-shadow: 0 0 8px color-mix(in oklab, var(--acento) 60%, transparent);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: amb-sube var(--ndur, 9s) linear forwards;
+}
+/* El glifo va en un hijo porque .amb-nota ya gasta SU transform en la subida.
+   Un elemento, un transform. */
+.amb-nota i{ display: inline-block; font-style: normal }
+@keyframes amb-sube{
+  0%  { transform: translate(0, 0) rotate(0deg); opacity: 0 }
+  12% { opacity: var(--nop, .3) }
+  70% { opacity: var(--nop, .3) }
+  100%{ transform: translate(var(--ndx, 20px), calc(-1 * var(--nh, 420px)))
+                   rotate(var(--nrot, 20deg));
+        opacity: 0 }
+}
+
+/* Con la canción parada, el ambiente se congela. Una línea. */
+body:not(.sonando) .amb-mancha{ animation-play-state: paused }
+
+/* En un aparato modesto, menos capas caras: el desenfoque de 64 px sobre
+   cuatro manchas es lo primero que hace tirones en un teléfono. */
+.cal-bajo .amb-mancha{ filter: blur(38px) }
+.cal-bajo .amb-c, .cal-bajo .amb-d{ display: none }
+.cal-bajo .escena .halo{ filter: blur(40px) saturate(1.3) }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   EL REGALO SE ABRE
+   El día llega envuelto y se desenvuelve solo: primero salta el nudo, luego
+   las cintas se recogen, y al final el papel se parte en dos y se va. Cuando
+   termina, entra la canción — de eso se encarga el motor.
+
+   Todo empieza VISIBLE y acaba fuera: es lo contrario de una entrada, y por
+   eso lleva `both`. Si estas animaciones no llegaran a correr, el papel se
+   quedaría puesto tapando la carátula; por eso el motor lo quita además con
+   un temporizador. Aquí también se falla hacia lo que se ve.
+
+   Los tiempos están escalonados a propósito y no son redondos: nudo .30 s,
+   cintas .36 s, papel .56 s. Abrir un regalo no es un solo gesto.
+   ═════════════════════════════════════════════════════════════════════════ */
+.funda .regalo .nudo  { animation: nudo-salta  .34s var(--curva)      .30s both }
+.funda .regalo .cinta.v{ animation: cinta-recoge-v .30s var(--curva-cine) .36s both }
+.funda .regalo .cinta.h{ animation: cinta-recoge-h .30s var(--curva-cine) .36s both }
+.regalo.corte-v .papel.a{ animation: papel-izq    .58s var(--curva-cine) .56s both }
+.regalo.corte-v .papel.b{ animation: papel-der    .58s var(--curva-cine) .56s both }
+.regalo.corte-h .papel.a{ animation: papel-arriba .58s var(--curva-cine) .56s both }
+.regalo.corte-h .papel.b{ animation: papel-abajo  .58s var(--curva-cine) .56s both }
+
+@keyframes nudo-salta{
+  from{ transform: none;        opacity: .95 }
+  40% { transform: scale(1.22); opacity: .95 }
+  to  { transform: scale(.15);  opacity: 0 }
+}
+@keyframes cinta-recoge-v{
+  from{ transform: scaleY(1); opacity: .92 }
+  to  { transform: scaleY(0); opacity: 0 }
+}
+@keyframes cinta-recoge-h{
+  from{ transform: scaleX(1); opacity: .92 }
+  to  { transform: scaleX(0); opacity: 0 }
+}
+@keyframes papel-izq{
+  from{ transform: none; opacity: 1 }
+  to  { transform: translateX(-106%) rotate(-8deg); opacity: 0 }
+}
+@keyframes papel-der{
+  from{ transform: none; opacity: 1 }
+  to  { transform: translateX(106%) rotate(8deg); opacity: 0 }
+}
+@keyframes papel-arriba{
+  from{ transform: none; opacity: 1 }
+  to  { transform: translateY(-106%) rotate(4deg); opacity: 0 }
+}
+@keyframes papel-abajo{
+  from{ transform: none; opacity: 1 }
+  to  { transform: translateY(106%) rotate(-4deg); opacity: 0 }
+}
+
+/* Y lo que hay dentro llega DESPUÉS del papel, no antes: si el título se leyera
+   mientras el paquete sigue cerrado, no habría sorpresa que abrir. La fecha sí
+   se queda desde el principio — esa no cuenta nada.
+
+   Van con `backwards`: antes de su turno están en el fotograma `from`, y al
+   acabar se quedan en su estado normal del CSS, que es visible. Si el navegador
+   no animara, se verían desde el primer momento: se pierde el efecto, nunca el
+   contenido.                                                                  */
+.escena .titular,
+.escena .firma   { animation: sale-del-papel .52s var(--curva-cine) .98s backwards }
+.escena .consola,
+.escena .sintono { animation: sale-del-papel .52s var(--curva-cine) 1.04s backwards }
+.escena .letra   { animation: sale-del-papel .52s var(--curva-cine) 1.10s backwards }
+.escena .dedicada{ animation: sale-del-papel .52s var(--curva-cine) 1.16s backwards }
+
+@keyframes sale-del-papel{
+  from{ opacity: 0; transform: translateY(9px) }
+  to  { opacity: 1; transform: none }
+}

@@ -1,0 +1,6 @@
+Pon aqui las caratulas, nombradas con la fecha:
+
+    2026-08-21.jpg
+
+Es opcional: si el mp3 ya lleva caratula dentro, se saca sola.
+Si no hay ninguna, se dibuja un degradado de color.

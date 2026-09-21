@@ -1,0 +1,4 @@
+Pon aqui las letras, nombradas con la fecha:
+
+    2026-08-21.lrc    <- sincronizada (karaoke). Descargalas de lrclib.net
+    2026-08-21.txt    <- o letra normal, sin sincronizar

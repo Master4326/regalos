@@ -1,0 +1,407 @@
+═══════════════════════════════════════════════════════════════════════
+  UN AÑO DE CANCIONES
+  Un calendario donde cada día es una canción, con su música y su letra
+═══════════════════════════════════════════════════════════════════════
+
+
+CÓMO SE VE
+──────────
+
+  1. El mes de hoy  →  el calendario se abre siempre AHÍ, y no hay una
+                       pantalla con los doce meses ni portada de ningún tipo.
+                       Ni título ni dedicatoria: la app ES el calendario. Lo
+                       primero que se ve es el rótulo del mes.
+
+                       Debajo, una tira aparece SOLO cuando hay algo que
+                       hacer:
+
+                         · "te espera una canción"  →  hoy hay regalo, con su
+                                                       botón para abrirlo
+                         · "hoy no hay canción"     →  ese día quedó vacío
+                         · en otro mes              →  cuántas quedan ahí, y
+                                                       el botón de volver a hoy
+
+                       En cuanto abres la de hoy, la tira DESAPARECE. No hace
+                       falta que nada te diga que ya la oíste: lo de hoy está
+                       cobrado y mañana hay otra.
+
+                       A la derecha de la tira, cuántas llevas abiertas de
+                       ese mes.
+
+  2. La cuadrícula  →  cada día es una casilla:
+
+                         · casilla con la cinta cruzada  →  se puede abrir
+                         · casilla apagada, con broche   →  aún no es su día
+                         · casilla con la cinta apagada  →  ya la abriste
+                         · casilla de borde punteado     →  ese día no tiene
+                                                            canción todavía
+
+                       Ninguna casilla dice qué canción guarda, ni enseña la
+                       carátula: es un regalo, y se sabe al abrirlo.
+
+                       El día de HOY, si aún guarda su canción, es la única
+                       casilla que se mueve: lleva un aro alrededor y cada
+                       dos segundos y medio sale de ella un anillo que se
+                       agranda y se apaga, como el "pulsa aquí" de un juego.
+                       Cuando ya la has abierto se apaga y se queda solo el
+                       puntito de la esquina, que marca dónde estás.
+
+                       El color no es siempre el mismo: cada mes tiene el
+                       suyo —el año entero es un giro lento de tono, de oro
+                       en enero a azul en diciembre— y cada paquete lleva el
+                       color de la canción que guarda.
+
+  3. Una canción    →  el día llega ENVUELTO: papel, cinta y nudo. Se abre
+                       solo —salta el nudo, se recogen las cintas, el papel
+                       se parte en dos— y debajo aparece la carátula.
+                       Cuando termina de abrirse, la canción empieza sola.
+
+                       Luego está todo: el reproductor, la letra y tu nota
+                       de por qué esa canción.
+
+                       La letra se lee EN ESPAÑOL. Las canciones en inglés
+                       están traducidas verso a verso, y lo que aparece en
+                       pantalla es la traducción; el original se queda
+                       debajo, escondido, y sale con el botón "ver original"
+                       de la esquina. Las canciones que ya están en español
+                       se leen tal cual.
+
+                       La letra va tipo KARAOKE, como en el reproductor: el
+                       verso que suena se tiñe PALABRA A PALABRA. Lo que ya
+                       sonó queda encendido, la palabra que suena justo ahora
+                       va en claro y con halo, y lo que falta espera apagado.
+                       Un .lrc solo marca el arranque de cada verso, así que
+                       el reparto dentro de la línea va por longitud: las
+                       palabras largas se cantan despacio y las cortas de
+                       paso. Se ve clavado.
+
+                       El reproductor: la barra es un degradado que va de
+                       apagado a encendido —sin agarradera redonda— y el
+                       play/pausa está dibujado a pixeles, con el mismo bisel
+                       de 8 bits que las flechas del mes. Todo se repinta
+                       fotograma a fotograma, que es lo que hace que la barra
+                       no vaya a tirones y que la palabra se encienda cuando
+                       se canta y no un cuarto de segundo después.
+
+                       Cada canción tiñe la pantalla de su propio color, y
+                       cada día se abre a su manera — siempre a la misma:
+                       vuelves al 14 de mayo y el 14 de mayo entra como
+                       lo recordabas.
+
+                       En una pantalla grande la canción se parte en dos:
+                       la letra grande a la izquierda y el disco con los
+                       mandos a la derecha. En el móvil, y en cualquier
+                       ventana estrecha, vuelve a ser una sola columna.
+
+  Se recuerda solo qué días se han abierto.
+
+  En el calendario:
+    ← →            meses de atrás, para oír otra vez lo que ya abriste.
+                   Hacia adelante se para en el mes de hoy: más allá solo
+                   hay casillas apagadas.
+    arrastrar      lo mismo, con el dedo, en el móvil.
+    el botón       de la tira te devuelve a hoy de un salto.
+
+  Con una canción abierta:
+    espacio        parar y seguir.
+    ← →            diez segundos atrás o adelante.
+    Esc            cerrarla.
+    un verso       pincha en él y la canción salta a ese momento.
+
+  Y suena también fuera de la pestaña: en el móvil sale en la pantalla de
+  bloqueo, con su carátula y su nombre, y los botones del manos libres o
+  del teclado la paran y la siguen. Mientras suena, la pantalla no se
+  apaga sola.
+
+
+CÓMO SE ABRE
+────────────
+
+  Doble clic en  index.html.  Nada más.
+
+  Funciona sin internet. Lo único que necesita conexión son las
+  tipografías: el calendario está escrito en letra de 8 bits (las mismas
+  del reproductor Master Music) y se descargan la primera vez. Sin
+  conexión se usan las de reserva y todo sigue funcionando igual, solo
+  que con otra letra.
+
+
+═══════════════════════════════════════════════════════════════════════
+  AÑADIR CANCIONES
+═══════════════════════════════════════════════════════════════════════
+
+Hay dos maneras. Elige una y quédate con ella.
+
+
+─── MANERA A: automática (recomendada) ────────────────────────────────
+
+  1. Suelta los archivos en las carpetas, nombrados con la FECHA:
+
+       audio/     2026-09-21 - Radiohead - Creep.mp3
+                  (o simplemente  2026-09-21.mp3)
+
+       notas/     2026-09-21.txt     ← tu texto: POR QUÉ esa canción
+
+     La letra y la carátula NO hace falta que las pongas tú: las baja
+     el paso siguiente. Solo el mp3 y tu nota son cosa tuya.
+
+  2. Doble clic en  COMPLETAR.bat
+
+     Descarga de internet lo que le falte a cada canción:
+
+       · la letra sincronizada  →  letras/2026-09-21.lrc    (lrclib.net)
+       · la carátula del disco  →  portadas/2026-09-21.jpg  (iTunes)
+
+     Las dos fuentes son gratis y no piden registro ni clave. Si algo ya
+     lo tenías, no lo toca. Si prefieres poner todo a mano, sáltate
+     este paso entero.
+
+  3. Doble clic en  ACTUALIZAR.bat
+
+  4. Abre index.html. Ya está.
+
+  El script te dice qué días le faltan cosas. Puedes ejecutarlo tantas
+  veces como quieras: reescribe canciones.js entero cada vez, y guarda
+  una copia de lo anterior en canciones.js.bak.
+
+  Por eso, en esta manera las notas SIEMPRE van en notas/*.txt —
+  si las escribes dentro de canciones.js, el script las machaca.
+
+
+─── MANERA B: a mano ──────────────────────────────────────────────────
+
+  Abre canciones.js con el Bloc de notas y escribe las entradas
+  siguiendo los ejemplos que ya trae. Nunca ejecutes ACTUALIZAR.bat
+  si trabajas así.
+
+
+═══════════════════════════════════════════════════════════════════════
+  LAS LETRAS SINCRONIZADAS (.lrc)
+═══════════════════════════════════════════════════════════════════════
+
+Un .lrc es un archivo de texto normal que lleva delante el momento en
+que suena cada frase:
+
+    [00:12.40]Y me quedé mirando al mar
+    [00:16.80]pensando en todo lo que fue
+    [00:21.05]
+
+No hace falta que los busques tú: COMPLETAR.bat los descarga solo
+de lrclib.net, que es gratis y sin registro.
+
+Para que acierte, el archivo de audio tiene que dejar claro qué canción
+es. Lo mejor es nombrarlo así:
+
+    audio/2026-09-21 - Radiohead - Creep.mp3
+
+Si el mp3 lleva bien puestas sus etiquetas internas, también le valen.
+
+
+POR QUÉ MIRA LA DURACIÓN
+────────────────────────
+
+En LRCLIB suele haber varias versiones de la misma canción: el single,
+la del álbum, un directo, una remasterización. Duran distinto, así que
+si coge la que no es, la letra va desincronizada de principio a fin.
+
+Por eso el script mide tu archivo y se queda con la versión que más se
+le parece. Si aun así hay mucha diferencia, te lo avisa con "??" y te
+dice cuántos segundos bailan, para que la compruebes al abrirla.
+
+
+LO QUE TE VA A DECIR
+────────────────────
+
+    ok    la ha encontrado y la ha guardado
+    ??    la ha guardado, pero la duración no cuadra: revísala
+    ~~    es instrumental, o solo hay letra sin sincronizar
+    --    no la encuentra, o no sabe qué canción es
+
+Al final te lista lo que queda pendiente y qué hacer con cada cosa.
+
+
+SI UNA CANCIÓN NO ESTÁ
+──────────────────────
+
+Pasa sobre todo con temas muy locales, remixes o cosas muy nuevas.
+Dos salidas:
+
+  · Guarda la letra normal en letras/FECHA.txt. Sale igual de bien,
+    solo que sin iluminarse.
+  · Escribe el .lrc a mano poniéndole el minuto a cada frase. Pesado,
+    pero para una canción muy vuestra merece la pena.
+
+
+═══════════════════════════════════════════════════════════════════════
+  LAS CARÁTULAS
+═══════════════════════════════════════════════════════════════════════
+
+COMPLETAR.bat también las baja solo, por este orden:
+
+  1. Si ya hay una en portadas/FECHA.jpg, la respeta.
+  2. Si el mp3 lleva carátula dentro, la saca de ahí. Es la mejor
+     opción: es exactamente el disco que tú tienes.
+  3. Si no, la busca en iTunes.
+
+Las guarda a 600x600, que se ve nítida en el móvil y ocupa poco. Un año
+entero de carátulas son unos 27 MB. Si las quieres más grandes:
+
+    py completar.py --tamano 1000
+
+Si un día no tiene carátula no pasa nada: el calendario le dibuja un
+degradado de color propio, distinto para cada canción. Y si la imagen se
+pierde o le cambias el nombre, pinta ese mismo degradado en su sitio: no
+verás nunca el cuadro roto del navegador.
+
+
+CUIDADO CON LA VERSIÓN
+──────────────────────
+
+Es el mismo problema que con las letras, y más traicionero. Buscando
+"radiohead creep" el primer resultado de iTunes es una versión acústica
+de un EP, y más abajo salen bandas de tributo y hasta versiones de
+piano para dormir.
+
+El script se defiende de eso: primero exige que sea el mismo artista,
+luego que dure aproximadamente lo mismo que tu archivo, y entre las que
+empatan prefiere el título limpio antes que un "(Live)" o un
+"(Acoustic)".
+
+Aun así no siempre existe la versión exacta en iTunes. Cuando la que
+encuentra no cuadra, te lo marca con "??" y te dice por qué. Míralas y,
+si alguna no te convence, guarda tú la imagen en portadas/FECHA.jpg y
+vuelve a ejecutar ACTUALIZAR.bat.
+
+
+═══════════════════════════════════════════════════════════════════════
+  AJUSTES
+═══════════════════════════════════════════════════════════════════════
+
+Se cambian en  config.js  (con el Bloc de notas):
+
+    anio          el año del calendario
+    titulo        el nombre de la PESTAÑA del navegador (en pantalla no
+                  sale nada: la app es el calendario y ya)
+    modo          "fecha" → cada día se abre cuando llega su fecha
+                  "libre" → todo abierto desde el principio
+
+
+═══════════════════════════════════════════════════════════════════════
+  CÓMO REGALARLO
+═══════════════════════════════════════════════════════════════════════
+
+  · En un USB o un pendrive bonito, con un post-it: "abre index.html".
+  · Comprimido en un ZIP y enviado por correo o WhatsApp.
+  · En una carpeta compartida de Drive o Dropbox.
+
+  Funciona sin internet y sin instalar nada, en Windows, Mac, Android
+  y iPhone. En el móvil hay que descomprimir el ZIP primero.
+
+
+═══════════════════════════════════════════════════════════════════════
+  SI ALGO NO VA
+═══════════════════════════════════════════════════════════════════════
+
+  No suena nada
+      Comprueba que el archivo existe y que el nombre del audio en
+      canciones.js coincide exactamente con el de la carpeta audio/.
+      Ojo con las mayúsculas y con .mp3 / .MP3.
+
+  ACTUALIZAR.bat se cierra al instante
+      Es que no tienes Python. Instálalo desde python.org y marca la
+      casilla "Add Python to PATH". O usa la Manera B, a mano.
+
+  La letra va desincronizada
+      El .lrc es de otra versión de la canción (directo, remasterización,
+      edit...). Borra letras/FECHA.lrc y vuelve a ejecutar COMPLETAR.bat,
+      o ajusta los tiempos a mano.
+      Para rehacerlo todo:   py completar.py --forzar
+
+  COMPLETAR no mira la duración
+      Le falta la librería que mide los mp3. Instálala una sola vez con:
+          py -m pip install --user mutagen
+      Sin ella sigue funcionando, pero acierta menos con la versión.
+
+  Se ve todo desnudo, sin color ni animaciones
+      Falta la carpeta css/ o la carpeta js/, o no están al lado de
+      index.html. Tienen que estar dentro de la misma carpeta.
+
+  La carátula es de otro disco
+      Guarda tú la imagen que quieras en portadas/FECHA.jpg y ejecuta
+      ACTUALIZAR.bat. Lo que pongas a mano manda siempre.
+
+  COMPLETAR va lento
+      Es a propósito. iTunes pide no pasar de unas 20 peticiones por
+      minuto, así que el script espera unos 3 segundos entre canciones.
+      Solo lo pagas la primera vez: las que ya tienes se las salta.
+
+  Solo quiero una de las dos cosas
+          py completar.py --solo-letras
+          py completar.py --solo-caratulas
+
+  Un día dice "No encuentro audio/…"
+      Ese día tiene su letra, su traducción, su nota y su carátula, pero
+      todavía no tiene el mp3. El aviso trae el nombre EXACTO que hay que
+      ponerle al archivo. Suéltalo en audio/ con ese nombre y ya suena; no
+      hace falta tocar nada más.
+
+  ¿Puedo ejecutar ACTUALIZAR.bat aunque me falten canciones?
+      Sí. Los días que aún no tienen mp3 conservan el título y el artista
+      que ya tenían, y las traducciones se vuelven a meter solas desde
+      traducciones/. Antes no era así: regenerar sin la música dejaba esos
+      días como "Canción del 3 de agosto". Ya no.
+
+
+═══════════════════════════════════════════════════════════════════════
+  QUÉ ES CADA ARCHIVO
+═══════════════════════════════════════════════════════════════════════
+
+    index.html        el calendario. No hace falta tocarlo nunca.
+    config.js         año, título de la pestaña, modo.
+    canciones.js      el contenido: qué canción va cada día.
+
+    audio/            las canciones.  AAAA-MM-DD - Artista - Titulo.mp3
+    letras/           las letras.     AAAA-MM-DD.lrc  (con tiempos)
+    traducciones/     el español.     AAAA-MM-DD.txt
+                      Una línea por verso:   original ||| en español
+                      Se busca por CONTENIDO, no por número de línea: un
+                      estribillo se traduce una vez y vale para todas sus
+                      repeticiones, y si cambias la letra no se descoloca.
+    notas/            tu texto.       AAAA-MM-DD.txt
+    portadas/         las carátulas.  AAAA-MM-DD.jpg
+
+    css/              cómo se ve: base.css el calendario, efectos.css
+                      las animaciones.
+    js/               cómo se mueve: el color de cada pantalla, el
+                      reparto de animaciones y el fondo vivo.
+
+    COMPLETAR.bat     doble clic: baja letras y carátulas de internet.
+    completar.py        el script que hay detrás.
+    ACTUALIZAR.bat    doble clic: mete todo en el calendario.
+    actualizar.py       el script que hay detrás.
+
+    PROGRAMA-MES.txt      qué canción va cada día y cuáles ya suenan.
+    FALTAN-ESTOS-MP3.txt  los mp3 que quedan, con el nombre exacto que
+                          tienen que llevar. Desaparece cuando no falta
+                          ninguno.
+    COMPRAR-CANCIONES.txt los enlaces de compra en iTunes.
+
+  Los dos primeros los reescribe ACTUALIZAR cada vez que lo ejecutas, así
+  que siempre dicen la verdad: antes se llevaban a mano y se quedaban con
+  las fechas del mes anterior mientras el calendario ya se había mudado.
+  Los tres son papeles tuyos, de montaje; el regalo no los usa y puedes
+  borrarlos antes de darlo.
+
+  El único que necesita internet es COMPLETAR. Todo lo demás, y el
+  regalo ya terminado, funcionan sin conexión.
+
+  Los dos .bat y los dos .py son herramientas tuyas para construirlo:
+  si le pasas la carpeta a alguien, puedes borrarlos y el calendario
+  sigue funcionando igual.
+
+  Lo que SÍ tiene que viajar entero: index.html, config.js,
+  canciones.js, las carpetas css/ y js/, y audio/ portadas/ letras/.
+  Sin css/ y js/ el calendario se abre, pero se ve como una lista
+  desnuda, sin colores ni animaciones.
+
+═══════════════════════════════════════════════════════════════════════
