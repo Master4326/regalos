@@ -9,6 +9,7 @@ Páginas-regalo publicadas con GitHub Pages: **https://master4326.github.io/rega
 | `pa-tu-amarillo.html` | la lámina índigo con lirios amarillos | `/regalos/pa-tu-amarillo.html` |
 | `pa-tu.html` | la lámina original, papel crema | `/regalos/pa-tu.html` |
 | `consola-del-corazon.html` | la consola retro | `/regalos/consola-del-corazon.html` |
+| `te-diria.html` | la carta "Te diría": sobre kraft, poema a máquina y notas a mano | `/regalos/te-diria.html` |
 
 El calendario es la excepción: es una carpeta entera (`calendario/`), no un HTML
 suelto. Ahí van los mp3, las portadas, las letras y las traducciones, y el enlace
