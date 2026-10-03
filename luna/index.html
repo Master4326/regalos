@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#03050c">
+<meta name="description" content="Tengo algo para ti. Ábrelo con sonido.">
+<meta property="og:title" content="Una luna para ti">
+<meta property="og:description" content="Tengo algo para ti. Ábrelo con sonido.">
+<title>Una luna para ti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: cielo vivo a pantalla completa; luna real en el tercio superior; la carta se escribe sola abajo */
+:root{
+  --night:#03050c;
+  --deep:#111a46;
+  --moon:#f5eedf;
+  --gold:#f3c873;
+  --mist:#aeb7d3;
+  --line:rgba(245,238,223,.2);
+  --display:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--night);color:var(--moon);font-family:var(--body);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#sky{position:fixed;inset:0;touch-action:none;cursor:grab;
+  background:radial-gradient(ellipse 130% 70% at 50% 112%,var(--deep) 0%,rgba(17,26,70,0) 62%),radial-gradient(ellipse 70% 50% at 12% -8%,rgba(92,48,138,.28),rgba(92,48,138,0) 70%),var(--night)}
+#sky:active{cursor:grabbing}
+#sky canvas{display:block}
+.glowlayer{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 130% 70% at 50% 112%,rgba(28,40,110,.75) 0%,rgba(28,40,110,0) 62%),radial-gradient(ellipse 70% 50% at 12% -8%,rgba(92,48,138,.35),rgba(92,48,138,0) 70%)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.fallback-moon{position:absolute;left:50%;top:32%;width:min(40vw,34vh);aspect-ratio:1;max-width:100%;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle at 62% 40%,#fbf6ea 0%,#d8d1c2 42%,#77736b 100%);box-shadow:0 0 90px 24px rgba(255,236,205,.16)}
+
+.eyebrow{margin:0;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--mist)}
+.hint{margin:0;font-size:13px;letter-spacing:.04em;color:var(--mist)}
+
+.intro{position:fixed;inset:0;z-index:5;display:grid;place-content:center;justify-items:center;gap:20px;text-align:center;padding:0 16px;cursor:pointer;
+  background:radial-gradient(circle at 50% 50%,rgba(3,5,12,.1),rgba(3,5,12,.6));transition:opacity 1.4s ease,visibility 1.4s}
+.intro.gone{opacity:0;visibility:hidden}
+.intro h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(3rem,10vw,6rem);line-height:.92;letter-spacing:-.01em;text-wrap:balance}
+.intro h1 em{color:var(--gold)}
+.star-btn{position:relative;width:110px;height:110px;border:0;border-radius:50%;background:none;color:var(--gold);cursor:pointer;display:grid;place-items:center}
+.star-btn svg{width:58px;height:58px;filter:drop-shadow(0 0 10px rgba(243,200,115,.9)) drop-shadow(0 0 28px rgba(243,200,115,.5));animation:breathe 2.6s ease-in-out infinite}
+.star-btn::before,.star-btn::after{content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(243,200,115,.55);animation:ring 2.6s ease-out infinite}
+.star-btn::after{animation-delay:1.3s}
+@keyframes ring{from{transform:scale(.55);opacity:.9}to{transform:scale(1.7);opacity:0}}
+@keyframes breathe{50%{transform:scale(1.14) rotate(10deg)}}
+
+.letter{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;justify-items:center;gap:18px;text-align:center;
+  padding:80px 16px calc(26px + env(safe-area-inset-bottom,0px));pointer-events:none;
+  background:linear-gradient(to top,rgba(3,5,12,.85) 0%,rgba(3,5,12,.6) 55%,rgba(3,5,12,0) 100%);transition:opacity 1.2s ease}
+.letter.hide{opacity:0}
+.typed{margin:0;max-width:31ch;min-height:4.2em;font-family:var(--display);font-style:italic;font-size:clamp(1.25rem,3.3vw,1.75rem);line-height:1.36;white-space:pre-line;text-wrap:pretty;text-shadow:0 0 18px rgba(3,5,12,.9)}
+.caret{display:inline-block;width:2px;height:.95em;margin-left:3px;vertical-align:-.1em;background:var(--gold);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.after{display:grid;justify-items:center;gap:12px;pointer-events:auto;animation:rise .9s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.btn{font:600 15px/1 var(--body);padding:13px 22px;border-radius:999px;border:1px solid var(--line);background:rgba(3,5,12,.4);color:var(--moon);cursor:pointer;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:border-color .2s,transform .15s}
+.btn:hover{border-color:rgba(245,238,223,.5)}
+.btn:active{transform:scale(.97)}
+.credit{margin:0;font-size:10px;color:var(--mist);opacity:.55;letter-spacing:.03em}
+.sound{position:fixed;z-index:6;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+  background:rgba(3,5,12,.35);color:var(--moon);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.sound svg{width:20px;height:20px}
+.star-btn:focus-visible,.btn:focus-visible,.sound:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+@media (max-height:700px){.typed{font-size:clamp(1.1rem,3vw,1.4rem)} .letter{gap:12px;padding-top:56px}}
+@media (prefers-reduced-motion:reduce){.star-btn svg,.star-btn::before,.star-btn::after,.caret{animation:none}}
+
+/* base que en el artifact ponía el envoltorio */
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="sky" aria-label="Cielo nocturno con la luna. Toca para soltar un farolito."></div>
+<div class="glowlayer" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<section class="letter hide" id="letter" aria-live="polite">
+  <p class="typed"><span id="typed"></span><span class="caret" aria-hidden="true"></span></p>
+  <div class="after" id="after" hidden>
+    <p class="hint">Toca el cielo para soltar un farolito con tu deseo</p>
+    <button class="btn" id="againBtn" type="button">Ver de nuevo</button>
+    <p class="credit">Luna: NASA LRO · Solar System Scope (CC BY 4.0)</p>
+  </div>
+</section>
+
+<div class="intro" id="intro">
+  <p class="eyebrow">Hoy es un día especial</p>
+  <h1>Tengo algo<br><em>para ti</em></h1>
+  <button class="star-btn" id="startBtn" type="button" aria-label="Abrir el regalo">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M50 2C53 36 64 47 98 50C64 53 53 64 50 98C47 64 36 53 2 50C36 47 47 36 50 2Z"/></svg>
+  </button>
+  <p class="hint">Toca la estrella · mejor con sonido</p>
+</div>
+
+<button class="sound" id="soundBtn" type="button" aria-pressed="false" aria-label="Silenciar" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+    <path id="waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+    <path id="cross" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" style="display:none"/>
+  </svg>
+</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+  const sky = $('sky'), fx = $('fx'), g = fx.getContext('2d'), typedEl = $('typed');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  const MESSAGE = 'Hoy el cielo se vistió de fiesta por ti.\nCada estrella es un deseo para tu nuevo año: calma, risas, aventuras y gente que te quiera bonito.\nFeliz cumpleaños.';
+
+  /* ================= Sonido: caja de música original ================= */
+  let ac = null, master = null, noise = null, muted = false, nextT = 0, step = 0, prevNote = 76, musicTimer = null;
+  function initAudio(){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC || ac) return;
+    ac = new AC();
+    const comp = ac.createDynamicsCompressor();
+    master = ac.createGain(); master.gain.value = .9;
+    const dl = ac.createDelay(1); dl.delayTime.value = .34;
+    const fb = ac.createGain(); fb.gain.value = .36;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2800;
+    const wet = ac.createGain(); wet.gain.value = .3;
+    master.connect(comp); comp.connect(ac.destination);
+    master.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(comp);
+    noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const ch = noise.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  }
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  function bell(m, t, vol = .12, dur = 2.2){
+    if (!ac) return;
+    const f = hz(m);
+    [[1, 1], [2, .3], [3.01, .09], [4.2, .04]].forEach(([k, a], i) => {
+      const o = ac.createOscillator(), gn = ac.createGain();
+      o.type = 'sine'; o.frequency.value = f * k;
+      gn.gain.setValueAtTime(0, t);
+      gn.gain.linearRampToValueAtTime(vol * a, t + .008);
+      gn.gain.exponentialRampToValueAtTime(.0001, t + dur / (1 + i * .9));
+      o.connect(gn); gn.connect(master); o.start(t); o.stop(t + dur + .1);
+    });
+  }
+  function pad(notes, t, dur){
+    if (!ac) return;
+    notes.forEach(m => {
+      const o = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain();
+      o.type = 'triangle'; o2.type = 'sine'; o.frequency.value = hz(m); o2.frequency.value = hz(m) * 1.004;
+      lp.type = 'lowpass'; lp.frequency.value = 900;
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.026, t + dur * .35); gn.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(lp); o2.connect(lp); lp.connect(gn); gn.connect(master);
+      o.start(t); o2.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05);
+    });
+  }
+  function pop(){
+    if (!ac || ac.state !== 'running') return;
+    const t = ac.currentTime;
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), gn = ac.createGain();
+    s.buffer = noise; f.type = 'lowpass'; f.frequency.value = rand(700, 1500);
+    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(.2, t + .012); gn.gain.exponentialRampToValueAtTime(.0001, t + .7);
+    s.connect(f); f.connect(gn); gn.connect(master); s.start(t); s.stop(t + .75);
+    const o = ac.createOscillator(), og = ac.createGain();
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + .3);
+    og.gain.setValueAtTime(.16, t); og.gain.exponentialRampToValueAtTime(.0001, t + .35);
+    o.connect(og); og.connect(master); o.start(t); o.stop(t + .4);
+    for (let i = 0; i < 6; i++) bell(88 + Math.floor(Math.random() * 12), t + .35 + Math.random() * .6, .012, .4);
+  }
+  // Do – Lam – Fa – Sol – Do – Mim – Fa – Sol, en compás de vals
+  const CHORDS = [[60, 4], [57, 3], [53, 4], [55, 4], [60, 4], [52, 3], [53, 4], [55, 4]];
+  const PENTA = [0, 2, 4, 7, 9];
+  function scheduler(){
+    if (!ac || ac.state !== 'running') return;
+    const eighth = .42;
+    if (nextT < ac.currentTime) nextT = ac.currentTime + .05;
+    while (nextT < ac.currentTime + .8) {
+      const [r, third] = CHORDS[Math.floor(step / 6) % CHORDS.length], i = step % 6;
+      const arp = [0, 7, 12, 12 + third, 19, 12 + third];
+      bell(r + arp[i], nextT, i === 0 ? .06 : .045, 1.8);
+      if (i === 0) pad([r - 12, r - 5, r + third], nextT, eighth * 6.2);
+      if ((i === 0 || i === 3 || (i === 5 && Math.random() < .35)) && Math.random() < .8) {
+        const tones = [];
+        for (let n = 72; n <= 88; n++) {
+          const pc = (n - r + 120) % 12;
+          if (pc === 0 || pc === third || pc === 7 || (PENTA.includes(n % 12) && Math.random() < .3)) tones.push(n);
+        }
+        tones.sort((a, b) => Math.abs(a - prevNote) - Math.abs(b - prevNote));
+        prevNote = tones[Math.min(tones.length - 1, Math.floor(Math.random() * 3))];
+        bell(prevNote, nextT, .09, 2.6);
+      }
+      nextT += eighth; step++;
+    }
+  }
+  function startMusic(){ if (!ac || musicTimer) return; nextT = ac.currentTime + .4; musicTimer = setInterval(scheduler, 200); }
+  document.addEventListener('visibilitychange', () => { if (ac) document.hidden ? ac.suspend() : ac.resume(); });
+  $('soundBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    muted = !muted;
+    if (master) master.gain.setTargetAtTime(muted ? 0 : .9, ac.currentTime, .08);
+    e.currentTarget.setAttribute('aria-pressed', String(muted));
+    e.currentTarget.setAttribute('aria-label', muted ? 'Activar sonido' : 'Silenciar');
+    $('waves').style.display = muted ? 'none' : '';
+    $('cross').style.display = muted ? '' : 'none';
+  });
+
+  /* ================= Escena 3D ================= */
+  const K = Math.tan(22.5 * Math.PI / 180);
+  let Z = 6.4, moonY = .36 * K * 6.4;
+  let renderer = null, scene, camera, moonGroup, moon, glow, halo, skyGroup, nebula, smallMat, brightMat, dustMat;
+  let reveal = .18, revealTarget = .18, riseStart = -1, glowPulse = 0;
+  const RISE_MS = 5200;
+
+  // Banda de la Vía Láctea en coordenadas de textura (u,v); cruza la vista en diagonal
+  const BAND = u => .5 + .26 * Math.sin((u - .75) * Math.PI * 2 + .25);
+  function uvDir(u, v){ const p = u * Math.PI * 2, th = clamp(v, 0, 1) * Math.PI; return [-Math.cos(p) * Math.sin(th), Math.cos(th), Math.sin(p) * Math.sin(th)]; }
+  function bandDir(r){ const u = r(); return uvDir(u, BAND(u) + (r() + r() + r() + r() - 2) * .045); }
+  function randDir(r){ const u = r() * 2 - 1, t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u); return [s * Math.cos(t), u, s * Math.sin(t)]; }
+
+  function nebulaCanvas(){
+    const w = 2048, h = 1024, c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'), r = rng(21);
+    const cols = ['118,92,210', '64,112,226', '206,88,170', '58,170,206', '236,170,118', '150,110,255'];
+    const blob = (cx, cy, rad, col, a) => {
+      for (const ox of [0, -w, w]) {
+        const X = cx + ox; if (X + rad < 0 || X - rad > w) continue;
+        const gr = x.createRadialGradient(X, cy, 0, X, cy, rad);
+        gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`);
+        x.fillStyle = gr; x.fillRect(X - rad, cy - rad, rad * 2, rad * 2);
+      }
+    };
+    x.fillStyle = '#000'; x.fillRect(0, 0, w, h); // lienzo opaco: el negro no suma en mezcla aditiva y evita la cuadrícula de alfa
+    x.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 1300; i++) {
+      const u = r(), spread = (r() + r() + r() - 1.5) * .11;
+      const core = Math.exp(-Math.pow((u - .72) * 5, 2));
+      blob(u * w, (BAND(u) + spread) * h, 18 + Math.pow(r(), 2) * 150, cols[(r() * cols.length) | 0], (.02 + r() * .04) * (.6 + core));
+    }
+    x.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < 260; i++) { const u = r(); blob(u * w, (BAND(u) + (r() - .5) * .03) * h, 10 + r() * 46, '0,0,0', .25); }
+    // reducir y desenfocar: borra el patrón de tramado que dejan cientos de degradados sumados
+    const out = document.createElement('canvas'); out.width = w / 2; out.height = h / 2;
+    const o = out.getContext('2d'); o.filter = 'blur(2px)'; o.imageSmoothingQuality = 'high';
+    o.drawImage(c, 0, 0, w / 2, h / 2);
+    return out;
+  }
+
+  function moonCanvas(){ // respaldo si no carga la textura real
+    const w = 1024, h = 512, c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'), r = rng(11);
+    x.fillStyle = '#9f9a91'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 900; i++) {
+      const cx = r() * w, cy = r() * h, rad = Math.pow(r(), 3) * 30 + 1;
+      const gr = x.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      gr.addColorStop(0, 'rgba(50,48,46,.3)'); gr.addColorStop(.8, 'rgba(230,224,212,.35)'); gr.addColorStop(1, 'rgba(230,224,212,0)');
+      x.fillStyle = gr; x.beginPath(); x.arc(cx, cy, rad, 0, Math.PI * 2); x.fill();
+    }
+    return c;
+  }
+
+  function glowTexture(){
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const x = c.getContext('2d'), gr = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, 'rgba(255,240,215,.6)'); gr.addColorStop(.42, 'rgba(255,236,205,.32)');
+    gr.addColorStop(.6, 'rgba(255,230,200,.08)'); gr.addColorStop(1, 'rgba(255,230,200,0)');
+    x.fillStyle = gr; x.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  }
+
+  const STAR_VS = `
+    attribute vec3 aColor; attribute float aSize; attribute float aPhase;
+    uniform float uTime; uniform float uPR; uniform float uReveal; uniform float uSpeed; uniform float uScale;
+    varying vec3 vColor; varying float vA;
+    void main(){
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      float sp = (0.6 + fract(aPhase * 7.13) * 2.4) * uSpeed;
+      float tw = 0.58 + 0.42 * sin(uTime * sp + aPhase);
+      vA = tw * clamp(uReveal * 1.6 - fract(aPhase * 3.7) * 0.6, 0.0, 1.0);
+      vColor = aColor;
+      gl_PointSize = max(1.5, aSize * uPR * (uScale / -mv.z));
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const SMALL_FS = `
+    varying vec3 vColor; varying float vA;
+    void main(){
+      float d = length(gl_PointCoord - 0.5);
+      float a = smoothstep(0.5, 0.0, d);
+      gl_FragColor = vec4(vColor, a * a * vA);
+    }`;
+  const BRIGHT_FS = `
+    varying vec3 vColor; varying float vA;
+    void main(){
+      vec2 p = gl_PointCoord - 0.5;
+      float d = length(p);
+      float core = exp(-d * d * 160.0);
+      float halo = exp(-d * d * 22.0) * 0.28;
+      float sx = exp(-abs(p.y) * 70.0) * smoothstep(0.5, 0.0, abs(p.x));
+      float sy = exp(-abs(p.x) * 70.0) * smoothstep(0.5, 0.0, abs(p.y));
+      float a = (core + halo + (sx + sy) * 0.55) * vA;
+      gl_FragColor = vec4(mix(vColor, vec3(1.0), core), a);
+    }`;
+
+  function starLayer(N, seed, bandShare, rMin, rMax, sizeFn, speed, scale, fs){
+    const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), size = new Float32Array(N), ph = new Float32Array(N);
+    const r = rng(seed);
+    const tints = [[.68, .8, 1], [.82, .9, 1], [1, 1, 1], [1, 1, 1], [1, .96, .88], [1, .88, .72], [1, .78, .6]];
+    for (let i = 0; i < N; i++) {
+      const d = r() < bandShare ? bandDir(r) : randDir(r), R = rMin + r() * (rMax - rMin);
+      pos[i * 3] = d[0] * R; pos[i * 3 + 1] = d[1] * R; pos[i * 3 + 2] = d[2] * R;
+      col.set(tints[(r() * tints.length) | 0], i * 3);
+      size[i] = sizeFn(r); ph[i] = r() * Math.PI * 2;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    geo.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1));
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uPR: { value: renderer.getPixelRatio() }, uReveal: { value: reveal }, uSpeed: { value: speed }, uScale: { value: scale } },
+      vertexShader: STAR_VS, fragmentShader: fs, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    return new THREE.Points(geo, mat);
+  }
+
+  function dustLayer(){
+    const N = innerWidth < 700 ? 220 : 380, pos = new Float32Array(N * 3), size = new Float32Array(N), ph = new Float32Array(N), sp = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = rand(-9, 9); pos[i * 3 + 1] = rand(-6, 6); pos[i * 3 + 2] = rand(-4, 2.5);
+      size[i] = rand(.35, 1.1); ph[i] = rand(0, 6.283); sp[i] = rand(.04, .16);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    geo.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1));
+    geo.setAttribute('aSpeed', new THREE.BufferAttribute(sp, 1));
+    dustMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uPR: { value: renderer.getPixelRatio() }, uReveal: { value: 0 } },
+      vertexShader: `
+        attribute float aSize; attribute float aPhase; attribute float aSpeed;
+        uniform float uTime; uniform float uPR; uniform float uReveal;
+        varying float vA; varying vec3 vColor;
+        void main(){
+          vec3 p = position;
+          p.y = mod(p.y + uTime * aSpeed + 6.0, 12.0) - 6.0;
+          p.x += sin(uTime * 0.4 + aPhase) * 0.25;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          vA = (0.3 + 0.7 * pow(0.5 + 0.5 * sin(uTime * (1.0 + aSpeed * 8.0) + aPhase * 5.0), 3.0)) * uReveal * 0.8;
+          vColor = mix(vec3(1.0, 0.8, 0.48), vec3(1.0, 0.97, 0.92), fract(aPhase * 3.3));
+          gl_PointSize = aSize * uPR * (40.0 / -mv.z);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: SMALL_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    return new THREE.Points(geo, dustMat);
+  }
+
+  function layout(){
+    const aspect = innerWidth / innerHeight;
+    Z = Math.max(2 / (.38 * 2 * K), 2 / (.6 * 2 * K * aspect));
+    moonY = K * Z * .36;
+    if (!renderer) return;
+    camera.aspect = aspect; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  }
+  function moonBottomPx(){ return innerHeight / 2 * (1 - (moonY - 1) / (K * Z)); }
+
+  function initThree(){
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x03050c, 1);
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    sky.appendChild(renderer.domElement);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 500);
+
+    skyGroup = new THREE.Group(); scene.add(skyGroup);
+    const nebTex = new THREE.CanvasTexture(nebulaCanvas());
+    nebTex.minFilter = THREE.LinearFilter; nebTex.generateMipmaps = false;
+    nebula = new THREE.Mesh(new THREE.SphereGeometry(200, 64, 32), new THREE.ShaderMaterial({
+      uniforms: { map: { value: nebTex }, uOpacity: { value: reveal } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform sampler2D map; uniform float uOpacity; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(map, vUv).rgb * uOpacity, 1.0); }',
+      side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    nebula.renderOrder = -3; skyGroup.add(nebula);
+    const small = starLayer(innerWidth < 700 ? 10000 : 18000, 9, .45, 80, 170, r => .5 + Math.pow(r(), 5) * 2.6, 1, 260, SMALL_FS);
+    smallMat = small.material; small.renderOrder = -2; skyGroup.add(small);
+    const bright = starLayer(340, 4, .3, 70, 120, r => 5 + Math.pow(r(), 3) * 9, 1.8, 230, BRIGHT_FS);
+    brightMat = bright.material; bright.renderOrder = -1; skyGroup.add(bright);
+    scene.add(dustLayer());
+
+    moonGroup = new THREE.Group(); scene.add(moonGroup);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+    moon = new THREE.Mesh(new THREE.SphereGeometry(1, 192, 128), mat);
+    moonGroup.add(moon);
+    const loader = new THREE.TextureLoader();
+    const fallbackMap = () => { const t = new THREE.CanvasTexture(moonCanvas()); t.encoding = THREE.sRGBEncoding; mat.map = t; mat.needsUpdate = true; };
+    if (location.protocol === 'file:') fallbackMap(); // abierta con doble clic: el navegador no deja usar las fotos en WebGL
+    else {
+      loader.load('moon-color.jpg', t => {
+        t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        mat.map = t; mat.needsUpdate = true;
+      }, undefined, fallbackMap);
+      loader.load('moon-height.jpg', t => { mat.bumpMap = t; mat.bumpScale = .055; mat.needsUpdate = true; });
+    }
+
+    const gt = glowTexture();
+    glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: gt, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    glow.position.z = -.5; moonGroup.add(glow);
+    halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: gt, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .22 }));
+    halo.scale.set(13, 13, 1); halo.position.z = -.8; moonGroup.add(halo);
+
+    const sun = new THREE.DirectionalLight(0xfff3e2, 2.6); sun.position.set(3.2, 1, 2.8); scene.add(sun);
+    scene.add(new THREE.AmbientLight(0x7d8cc4, .05)); // luz cenicienta en la cara oscura
+    layout();
+  }
+
+  /* ================= Capa 2D: farolitos, fuegos, fugaces, texto de estrellas ================= */
+  let W = 0, H = 0, DPR = 1;
+  function sizeFx(){
+    DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+    fx.width = Math.round(W * DPR); fx.height = Math.round(H * DPR);
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  const spriteCache = {};
+  function sprite(rgb){
+    if (spriteCache[rgb]) return spriteCache[rgb];
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.18, `rgba(${rgb},.9)`);
+    gr.addColorStop(.45, `rgba(${rgb},.25)`); gr.addColorStop(1, `rgba(${rgb},0)`);
+    x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+    return (spriteCache[rgb] = c);
+  }
+
+  // Estrellas fugaces
+  const meteors = [];
+  function meteor(){
+    const left = Math.random() < .5, ang = .35 + Math.random() * .4, sp = rand(10, 17);
+    meteors.push({ x: left ? rand(0, W * .55) : rand(W * .45, W), y: rand(-20, H * .35), vx: (left ? 1 : -1) * Math.sin(ang) * sp, vy: Math.cos(ang) * sp * .5,
+      life: 0, max: rand(40, 70), len: rand(8, 14) });
+  }
+  function drawMeteors(){
+    g.globalCompositeOperation = 'lighter';
+    for (let i = meteors.length - 1; i >= 0; i--) {
+      const m = meteors[i]; m.life++; m.x += m.vx; m.y += m.vy;
+      const a = Math.sin(Math.PI * Math.min(1, m.life / m.max));
+      const tx = m.x - m.vx * m.len, ty = m.y - m.vy * m.len, gr = g.createLinearGradient(tx, ty, m.x, m.y);
+      gr.addColorStop(0, 'rgba(180,200,255,0)'); gr.addColorStop(1, `rgba(255,250,240,${a})`);
+      g.strokeStyle = gr; g.lineWidth = 1.8; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(tx, ty); g.lineTo(m.x, m.y); g.stroke();
+      g.globalAlpha = a; g.drawImage(sprite('210,225,255'), m.x - 9, m.y - 9, 18, 18); g.globalAlpha = 1;
+      if (m.life >= m.max) meteors.splice(i, 1);
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  // Destellos de cuatro puntas
+  const sparks = [], SPARK = ['243,200,115', '255,238,200', '255,255,255', '210,222,255', '255,170,200'];
+  function burst(x, y, n, power = 1){
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = (1 + Math.random() * 4) * power;
+      sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 0, max: rand(45, 95), size: rand(2, 6), rot: Math.random() * 6, vr: rand(-.1, .1), c: pick(SPARK) });
+    }
+  }
+  function star4(x, y, s, r){
+    g.save(); g.translate(x, y); g.rotate(r); g.beginPath();
+    for (let i = 0; i < 8; i++) { const rad = i % 2 ? s * .28 : s, a = i * Math.PI / 4; g.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
+    g.closePath(); g.fill(); g.restore();
+  }
+  function drawSparks(){
+    g.globalCompositeOperation = 'lighter';
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i]; p.life++; p.x += p.vx; p.y += p.vy; p.vx *= .965; p.vy = p.vy * .965 + .03; p.rot += p.vr;
+      const a = 1 - p.life / p.max;
+      g.fillStyle = `rgba(${p.c},${a})`; star4(p.x, p.y, p.size * (.6 + a * .4), p.rot);
+      if (p.life >= p.max) sparks.splice(i, 1);
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  // Fuegos artificiales
+  const rockets = [], parts = [], flashes = [];
+  const PALETTES = [['255,214,128', '255,244,214'], ['255,128,170', '255,214,230'], ['140,200,255', '220,240,255'], ['190,150,255', '236,224,255'], ['120,240,205', '220,255,244'], ['255,170,90', '255,230,180']];
+  function launch(x, ty){
+    const v = -Math.sqrt(2 * .05 * (H + 10 - ty));
+    rockets.push({ x, y: H + 10, vx: rand(-.5, .5), vy: v, pal: pick(PALETTES) });
+  }
+  function explode(R){
+    const type = Math.random(), n = reduce ? 40 : (70 + Math.random() * 60) | 0;
+    const S = rand(2.4, 4) * clamp(Math.min(W, H) / 700, .7, 1.3);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * .1;
+      const sp = type < .25 ? S * rand(.95, 1.05) : S * (.3 + .7 * Math.sqrt(Math.random()));
+      const willow = type > .82;
+      parts.push({ x: R.x, y: R.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: rand(55, 95) * (willow ? 1.7 : 1), c: willow ? '255,206,120' : (Math.random() < .8 ? R.pal[0] : R.pal[1]), willow });
+    }
+    flashes.push({ x: R.x, y: R.y, life: 0, c: R.pal[1] });
+    pop();
+  }
+  function drawFireworks(){
+    g.globalCompositeOperation = 'lighter';
+    for (let i = rockets.length - 1; i >= 0; i--) {
+      const R = rockets[i]; R.vy += .05; R.x += R.vx; R.y += R.vy;
+      g.drawImage(sprite('255,220,160'), R.x - 6, R.y - 6, 12, 12);
+      if (Math.random() < .7) parts.push({ x: R.x, y: R.y, vx: rand(-.3, .3), vy: rand(.2, .8), life: 0, max: rand(18, 30), c: '255,200,130', ember: true });
+      if (R.vy > -1.1) { explode(R); rockets.splice(i, 1); }
+    }
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i]; f.life++; const a = 1 - f.life / 14;
+      g.globalAlpha = Math.max(0, a) * .8; g.drawImage(sprite(f.c), f.x - 90, f.y - 90, 180, 180);
+      if (f.life >= 14) flashes.splice(i, 1);
+    }
+    g.lineCap = 'round';
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.life++;
+      p.vx *= .982; p.vy = p.vy * .982 + (p.willow ? .028 : p.ember ? .01 : .042);
+      p.x += p.vx; p.y += p.vy;
+      const k = p.life / p.max; let a = 1 - k;
+      if (k > .65 && !p.ember && Math.random() < .45) a *= .25;
+      g.globalAlpha = a;
+      if (!p.ember) {
+        g.strokeStyle = `rgba(${p.c},${a * .7})`; g.lineWidth = 1.5;
+        g.beginPath(); g.moveTo(p.x - p.vx * 3, p.y - p.vy * 3); g.lineTo(p.x, p.y); g.stroke();
+      }
+      const s = p.ember ? 5 : 8; g.drawImage(sprite(p.c), p.x - s / 2, p.y - s / 2, s, s);
+      if (p.life >= p.max) parts.splice(i, 1);
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  }
+
+  // Farolitos que suben hacia la luna
+  const lanterns = [];
+  function lantern(x, y, s){ lanterns.push({ x, y, s, vy: rand(.35, .6), ph: rand(0, 6.283), sway: rand(.12, .32), a: 0 }); }
+  function drawLanterns(now){
+    const base = Math.min(W, H) * .03 + 10;
+    for (let i = lanterns.length - 1; i >= 0; i--) {
+      const L = lanterns[i];
+      L.y -= L.vy * (.6 + L.s * .7); L.x += Math.sin(now * .0009 + L.ph) * L.sway; L.s *= .9993; L.a = Math.min(1, L.a + .02);
+      const alpha = L.a * clamp((L.y - H * .04) / (H * .25), 0, 1);
+      if (alpha <= 0 && L.y < H * .3) { lanterns.splice(i, 1); continue; }
+      const s = base * L.s, fl = .85 + .15 * Math.sin(now * .012 + L.ph * 7) * Math.sin(now * .007 + L.ph);
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = alpha * .55 * fl;
+      g.drawImage(sprite('255,150,60'), L.x - s * 2.6, L.y - s * 2.5, s * 5.2, s * 5.2);
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = alpha * .95;
+      const w1 = s * .78, w2 = s * .58, h = s * 1.2, top = L.y - h * .55, bot = L.y + h * .45;
+      const gr = g.createLinearGradient(0, top, 0, bot);
+      gr.addColorStop(0, 'rgb(186,70,34)'); gr.addColorStop(.55, 'rgb(242,138,60)'); gr.addColorStop(1, 'rgb(255,214,132)');
+      g.fillStyle = gr; g.beginPath();
+      g.moveTo(L.x - w1 / 2, top + s * .08); g.quadraticCurveTo(L.x, top - s * .1, L.x + w1 / 2, top + s * .08);
+      g.lineTo(L.x + w2 / 2, bot); g.quadraticCurveTo(L.x, bot + s * .06, L.x - w2 / 2, bot); g.closePath(); g.fill();
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = alpha * fl * .9;
+      g.drawImage(sprite('255,220,140'), L.x - s * .5, bot - s * .55, s, s * .9);
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  }
+
+  // "Feliz cumpleaños" escrito con estrellas
+  let tparts = [], tState = 'none', tStart = 0;
+  async function buildText(){
+    try { await document.fonts.ready; await document.fonts.load('italic 100px "Instrument Serif"'); } catch (e) {}
+    const lines = W < 720 ? ['Feliz', 'cumpleaños'] : ['Feliz cumpleaños'];
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const o = c.getContext('2d'), font = s => `italic ${s}px "Instrument Serif", Georgia, serif`;
+    let fs = Math.min(lines.length > 1 ? W * .26 : W * .11, H * .15);
+    o.font = font(fs);
+    const mw = Math.max(...lines.map(l => o.measureText(l).width));
+    if (mw > W * .88) { fs *= W * .88 / mw; o.font = font(fs); }
+    const mb = moonBottomPx(), cy = mb + (H - mb) * .42, lh = fs * .92;
+    o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
+    lines.forEach((l, i) => o.fillText(l, W / 2, cy + (i - (lines.length - 1) / 2) * lh));
+    const d = o.getImageData(0, 0, W, H).data, st = Math.max(3, Math.round(fs / 26));
+    const pts = [];
+    for (let y = 0; y < H; y += st) for (let x = 0; x < W; x += st) if (d[(y * W + x) * 4 + 3] > 140) pts.push([x, y]);
+    for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pts[i], pts[j]] = [pts[j], pts[i]]; }
+    const MAX = W < 720 ? 1700 : 2800;
+    tparts = pts.slice(0, MAX).map(([x, y]) => ({
+      tx: x + rand(-1, 1), ty: y + rand(-1, 1), sx: rand(0, W), sy: rand(0, H * .7), cx: rand(-1, 1) * W * .15, cy: rand(-1, 1) * H * .15,
+      d: Math.random() * .9, s: rand(1.3, 3.2), tw: rand(0, 6.283), x: 0, y: 0, vx: 0, vy: 0,
+      c: Math.random() < .7 ? '255,236,205' : (Math.random() < .6 ? '243,200,115' : '255,170,200')
+    }));
+    tState = 'form'; tStart = performance.now();
+  }
+  function disperseText(){
+    const cx = W / 2, cy = moonBottomPx() + (H - moonBottomPx()) * .42;
+    tparts.forEach(p => {
+      const dx = p.x - cx, dy = p.y - cy, L = Math.hypot(dx, dy) || 1, sp = rand(.4, 2.6);
+      p.vx = dx / L * sp + rand(-.4, .4); p.vy = dy / L * sp * .5 - rand(.4, 1.8);
+    });
+    tState = 'disperse'; tStart = performance.now();
+  }
+  function drawText(now){
+    if (tState === 'none') return;
+    const t = (now - tStart) / 1000;
+    g.globalCompositeOperation = 'lighter';
+    for (const p of tparts) {
+      let a;
+      if (tState === 'form') {
+        const k = reduce ? Math.min(1, t / 1.2) : clamp((t - p.d) / 1.8, 0, 1);
+        const e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        if (reduce) { p.x = p.tx; p.y = p.ty; a = e; }
+        else {
+          const arc = Math.sin(Math.PI * e);
+          p.x = p.sx + (p.tx - p.sx) * e + p.cx * arc; p.y = p.sy + (p.ty - p.sy) * e + p.cy * arc; a = .35 + .65 * e;
+        }
+        a *= .78 + .22 * Math.sin(now * .004 + p.tw);
+      } else {
+        p.vx *= .99; p.vy = p.vy * .99 - .008; p.x += p.vx; p.y += p.vy;
+        a = Math.max(0, 1 - t / 2.4);
+      }
+      const s = p.s * 3.2;
+      g.globalAlpha = a; g.drawImage(sprite(p.c), p.x - s / 2, p.y - s / 2, s, s);
+    }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    if (tState === 'form' && t > 2.4 && !reduce && Math.random() < .35 && tparts.length) {
+      const p = pick(tparts); sparks.push({ x: p.x, y: p.y, vx: 0, vy: -.2, life: 0, max: 40, size: rand(3, 7), rot: 0, vr: .05, c: '255,244,214' });
+    }
+    if (tState === 'disperse' && t > 2.5) { tState = 'none'; tparts = []; }
+  }
+
+  /* ================= Interacción ================= */
+  let dragging = false, moved = 0, lx = 0, ly = 0, px = 0, py = 0, camX = 0, camY = 0, dragX = 0, dragY = 0;
+  let started = false, finalMode = false;
+  sky.addEventListener('pointerdown', e => { dragging = true; moved = 0; lx = e.clientX; ly = e.clientY; try { sky.setPointerCapture(e.pointerId); } catch (_) {} });
+  sky.addEventListener('pointermove', e => {
+    px = e.clientX / innerWidth - .5; py = e.clientY / innerHeight - .5;
+    if (!dragging) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 6) { dragY = clamp(dragY + dx * .005, -1.2, 1.2); dragX = clamp(dragX + dy * .004, -.6, .6); }
+  });
+  sky.addEventListener('pointerup', e => { if (dragging && moved < 8 && started) tap(e.clientX, e.clientY); dragging = false; });
+  sky.addEventListener('pointercancel', () => { dragging = false; });
+
+  function tap(x, y){
+    lantern(x, y + 20, rand(.85, 1.05));
+    burst(x, y, reduce ? 5 : 14, .8);
+    glowPulse = .6;
+    if (ac) bell(pick([84, 86, 88, 91, 93]), ac.currentTime + .01, .08, 2.4);
+  }
+
+  let runId = 0;
+  async function typeText(s, id){
+    typedEl.textContent = '';
+    for (const ch of s) {
+      if (id !== runId) return;
+      typedEl.textContent += ch;
+      await sleep(reduce ? 0 : ch === '\n' ? 520 : /[.,:]/.test(ch) ? 280 : 38);
+    }
+  }
+  const fireX = () => Math.random() < .5 ? rand(.08, .3) * W : rand(.7, .92) * W;
+  async function play(){
+    const id = ++runId;
+    finalMode = false;
+    $('letter').classList.add('hide'); $('after').hidden = true;
+    await sleep(600); if (id !== runId) return;
+    typedEl.textContent = '';
+    await buildText(); if (id !== runId) return;
+    if (ac) [60, 64, 67, 72, 76].forEach((m, i) => bell(m + 12, ac.currentTime + .1 + i * .09, .07, 3.2));
+    await sleep(2600); if (id !== runId) return;
+    const n = reduce ? 3 : 8;
+    for (let i = 0; i < n; i++) setTimeout(() => { if (id === runId) launch(fireX(), rand(.08, .38) * H); }, i * 620 + rand(0, 250));
+    await sleep(n * 620 + 1600); if (id !== runId) return;
+    disperseText();
+    await sleep(900); if (id !== runId) return;
+    $('letter').classList.remove('hide');
+    await typeText(MESSAGE, id); if (id !== runId) return;
+    $('after').hidden = false; finalMode = true;
+  }
+  async function begin(){
+    if (started) return;
+    started = true;
+    initAudio(); if (ac && ac.state === 'suspended') ac.resume();
+    startMusic();
+    $('intro').classList.add('gone'); $('soundBtn').hidden = false;
+    revealTarget = 1; riseStart = performance.now();
+    const b = $('startBtn').getBoundingClientRect();
+    burst(b.left + b.width / 2, b.top + b.height / 2, reduce ? 12 : 40, 1.4);
+    if (ac) [72, 76, 79, 84, 88].forEach((m, i) => bell(m, ac.currentTime + .05 + i * .12, .09, 3));
+    await sleep(reduce ? 1500 : 4800);
+    play();
+  }
+  $('intro').addEventListener('click', begin);
+  $('againBtn').addEventListener('click', play);
+
+  /* ================= Bucle ================= */
+  let last = performance.now(), nextMeteor = 2500, nextLantern = 0, nextFirework = 3000;
+  function frame(now){
+    const dt = Math.min(50, now - last); last = now;
+    reveal += (revealTarget - reveal) * Math.min(1, dt * .0012);
+    if (renderer) {
+      const t = now / 1000;
+      for (const m of [smallMat, brightMat]) { m.uniforms.uTime.value = t; m.uniforms.uReveal.value = reveal; }
+      dustMat.uniforms.uTime.value = t; dustMat.uniforms.uReveal.value = clamp((reveal - .2) / .8, 0, 1);
+      nebula.material.uniforms.uOpacity.value = reveal;
+      skyGroup.rotation.z += dt * .0000022;
+      let e = 0;
+      if (riseStart >= 0) { const k = clamp((now - riseStart) / RISE_MS, 0, 1); e = 1 - Math.pow(1 - k, 3); }
+      moonGroup.position.y = moonY - (1 - e) * K * Z * 1.5;
+      if (!dragging) { dragX *= .95; dragY *= .95; }
+      moon.rotation.y = -Math.PI / 2 + Math.sin(t * .11) * .09 + dragY;
+      moon.rotation.x = Math.sin(t * .07) * .04 + dragX;
+      glowPulse *= .965;
+      const gs = 4.8 * (1 + glowPulse * .2 + Math.sin(t * .6) * .015);
+      glow.scale.set(gs, gs, 1);
+      if (!reduce) { camX += (px * .45 - camX) * .03; camY += (-py * .3 - camY) * .03; }
+      camera.position.set(camX + Math.sin(t * .13) * .12, camY + Math.sin(t * .09) * .08, Z);
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+    }
+    g.clearRect(0, 0, W, H);
+    nextMeteor -= dt;
+    if (nextMeteor < 0) { meteor(); nextMeteor = !started ? rand(3500, 7000) : reduce ? 9000 : rand(900, 3200); }
+    if (finalMode) {
+      nextLantern -= dt;
+      if (nextLantern < 0 && lanterns.length < 28) { lantern(rand(.06, .94) * W, H + 40, rand(.35, .95)); nextLantern = rand(1300, 2800); }
+      nextFirework -= dt;
+      if (nextFirework < 0) { launch(fireX(), rand(.08, .4) * H); nextFirework = reduce ? 15000 : rand(5000, 9000); }
+    }
+    drawLanterns(now); drawFireworks(); drawMeteors(); drawText(now); drawSparks();
+    requestAnimationFrame(frame);
+  }
+
+  sizeFx();
+  try {
+    if (!window.THREE) throw new Error('three no cargó');
+    initThree();
+  } catch (err) {
+    renderer = null; layout();
+    const f = document.createElement('div'); f.className = 'fallback-moon'; sky.appendChild(f);
+  }
+  addEventListener('resize', () => { sizeFx(); layout(); });
+  requestAnimationFrame(frame);
+  if (location.hash === '#ver') begin();
+})();
+</script>
+</body>
+</html>
