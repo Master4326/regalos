@@ -4,28 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#03050c">
-<meta name="description" content="Tengo algo para ti. Ábrelo con sonido.">
+<meta name="description" content="Psst... tengo algo para ti.">
 <meta property="og:title" content="Una luna para ti">
-<meta property="og:description" content="Tengo algo para ti. Ábrelo con sonido.">
+<meta property="og:description" content="Psst... tengo algo para ti.">
 <title>Una luna para ti</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-/* Layout: cielo vivo a pantalla completa; luna real en el tercio superior; la carta se escribe sola abajo */
+/* Layout: cielo vivo a pantalla completa; luna real en el tercio superior; el texto, en píxeles de 8 bits, sale en una caja de diálogo abajo */
 :root{
   --night:#03050c;
   --deep:#111a46;
   --moon:#f5eedf;
   --gold:#f3c873;
   --mist:#aeb7d3;
-  --line:rgba(245,238,223,.2);
-  --display:"Instrument Serif","Iowan Old Style",Georgia,serif;
-  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shade:#4a31a6;
+  --line:rgba(245,238,223,.25);
+  --pixel:"Press Start 2P",ui-monospace,"Courier New",monospace;
   color-scheme:dark;
 }
+*,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
-body{background:var(--night);color:var(--moon);font-family:var(--body);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body{background:var(--night);color:var(--moon);font-family:var(--pixel);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 #sky{position:fixed;inset:0;touch-action:none;cursor:grab;
   background:radial-gradient(ellipse 130% 70% at 50% 112%,var(--deep) 0%,rgba(17,26,70,0) 62%),radial-gradient(ellipse 70% 50% at 12% -8%,rgba(92,48,138,.28),rgba(92,48,138,0) 70%),var(--night)}
 #sky:active{cursor:grabbing}
@@ -36,44 +37,46 @@ body{background:var(--night);color:var(--moon);font-family:var(--body);overflow:
 .fallback-moon{position:absolute;left:50%;top:32%;width:min(40vw,34vh);aspect-ratio:1;max-width:100%;transform:translate(-50%,-50%);border-radius:50%;
   background:radial-gradient(circle at 62% 40%,#fbf6ea 0%,#d8d1c2 42%,#77736b 100%);box-shadow:0 0 90px 24px rgba(255,236,205,.16)}
 
-.eyebrow{margin:0;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--mist)}
-.hint{margin:0;font-size:13px;letter-spacing:.04em;color:var(--mist)}
-
-.intro{position:fixed;inset:0;z-index:5;display:grid;place-content:center;justify-items:center;gap:20px;text-align:center;padding:0 16px;cursor:pointer;
-  background:radial-gradient(circle at 50% 50%,rgba(3,5,12,.1),rgba(3,5,12,.6));transition:opacity 1.4s ease,visibility 1.4s}
-.intro.gone{opacity:0;visibility:hidden}
-.intro h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(3rem,10vw,6rem);line-height:.92;letter-spacing:-.01em;text-wrap:balance}
-.intro h1 em{color:var(--gold)}
-.star-btn{position:relative;width:110px;height:110px;border:0;border-radius:50%;background:none;color:var(--gold);cursor:pointer;display:grid;place-items:center}
-.star-btn svg{width:58px;height:58px;filter:drop-shadow(0 0 10px rgba(243,200,115,.9)) drop-shadow(0 0 28px rgba(243,200,115,.5));animation:breathe 2.6s ease-in-out infinite}
-.star-btn::before,.star-btn::after{content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(243,200,115,.55);animation:ring 2.6s ease-out infinite}
-.star-btn::after{animation-delay:1.3s}
-@keyframes ring{from{transform:scale(.55);opacity:.9}to{transform:scale(1.7);opacity:0}}
-@keyframes breathe{50%{transform:scale(1.14) rotate(10deg)}}
-
-.letter{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;justify-items:center;gap:18px;text-align:center;
-  padding:80px 16px calc(26px + env(safe-area-inset-bottom,0px));pointer-events:none;
-  background:linear-gradient(to top,rgba(3,5,12,.85) 0%,rgba(3,5,12,.6) 55%,rgba(3,5,12,0) 100%);transition:opacity 1.2s ease}
-.letter.hide{opacity:0}
-.typed{margin:0;max-width:31ch;min-height:4.2em;font-family:var(--display);font-style:italic;font-size:clamp(1.25rem,3.3vw,1.75rem);line-height:1.36;white-space:pre-line;text-wrap:pretty;text-shadow:0 0 18px rgba(3,5,12,.9)}
-.caret{display:inline-block;width:2px;height:.95em;margin-left:3px;vertical-align:-.1em;background:var(--gold);animation:blink 1s steps(1) infinite}
+.psst{margin:0;font-size:12px;letter-spacing:.12em;color:var(--mist)}
+.hint{margin:0;font-size:11px;line-height:2;letter-spacing:.05em;color:var(--mist)}
+.blink{animation:blink 1.1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-.after{display:grid;justify-items:center;gap:12px;pointer-events:auto;animation:rise .9s ease both}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}}
-.btn{font:600 15px/1 var(--body);padding:13px 22px;border-radius:999px;border:1px solid var(--line);background:rgba(3,5,12,.4);color:var(--moon);cursor:pointer;
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:border-color .2s,transform .15s}
-.btn:hover{border-color:rgba(245,238,223,.5)}
-.btn:active{transform:scale(.97)}
-.credit{margin:0;font-size:10px;color:var(--mist);opacity:.55;letter-spacing:.03em}
-.sound{position:fixed;z-index:6;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
-  background:rgba(3,5,12,.35);color:var(--moon);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.sound svg{width:20px;height:20px}
-.star-btn:focus-visible,.btn:focus-visible,.sound:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-@media (max-height:700px){.typed{font-size:clamp(1.1rem,3vw,1.4rem)} .letter{gap:12px;padding-top:56px}}
-@media (prefers-reduced-motion:reduce){.star-btn svg,.star-btn::before,.star-btn::after,.caret{animation:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* base que en el artifact ponía el envoltorio */
-*{box-sizing:border-box}
+.intro{position:fixed;inset:0;z-index:5;display:grid;place-content:center;justify-items:center;gap:22px;text-align:center;padding:0 16px;cursor:pointer;
+  background:radial-gradient(circle at 50% 50%,rgba(3,5,12,.15),rgba(3,5,12,.65));transition:opacity 1.2s steps(6),visibility 1.2s}
+.intro.gone{opacity:0;visibility:hidden}
+.intro h1{margin:0;font-weight:400;font-size:clamp(20px,5.2vw,46px);line-height:1.55;color:var(--moon);text-shadow:4px 4px 0 var(--shade)}
+.intro h1 em{font-style:normal;color:var(--gold)}
+.star-btn{position:relative;width:110px;height:110px;border:0;background:none;color:var(--gold);cursor:pointer;display:grid;place-items:center}
+.star-btn svg{width:54px;height:54px;filter:drop-shadow(0 0 8px rgba(243,200,115,.85)) drop-shadow(0 0 24px rgba(243,200,115,.45));animation:twinkle 1.2s steps(1) infinite}
+.star-btn::before,.star-btn::after{content:"";position:absolute;inset:28px;border:3px solid rgba(243,200,115,.6);animation:ring 2.4s steps(8) infinite}
+.star-btn::after{animation-delay:1.2s}
+@keyframes ring{from{transform:rotate(45deg) scale(.5);opacity:1}to{transform:rotate(45deg) scale(1.5);opacity:0}}
+@keyframes twinkle{50%{transform:scale(1.15)}}
+
+.dialog{position:fixed;left:0;right:0;bottom:0;z-index:3;display:grid;justify-items:center;gap:16px;text-align:center;
+  padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));pointer-events:none;transition:opacity .5s steps(4)}
+.dialog.hide{opacity:0}
+.dialog.hide .box{pointer-events:none}
+.box{position:relative;width:min(100%,680px);pointer-events:auto;cursor:pointer;text-align:left;
+  background:rgba(6,8,26,.92);border:4px solid var(--moon);box-shadow:0 0 0 4px var(--night),0 0 0 8px var(--shade);padding:18px 20px 30px}
+.line{margin:0;min-height:6em;font-size:clamp(12px,2.3vw,17px);line-height:2;color:var(--moon)}
+.next{position:absolute;right:14px;bottom:10px;width:15px;height:9px;color:var(--gold);animation:bob .6s steps(1) infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+.after{display:grid;justify-items:center;gap:14px;pointer-events:auto}
+.btn{font:12px/1 var(--pixel);padding:13px 16px;border:3px solid var(--moon);background:var(--night);color:var(--moon);cursor:pointer;box-shadow:4px 4px 0 var(--shade)}
+.btn:hover{color:var(--gold);border-color:var(--gold)}
+.btn:active{transform:translate(4px,4px);box-shadow:none}
+.credit{margin:0;font-size:7px;line-height:1.6;color:var(--mist);opacity:.6}
+.sound{position:fixed;z-index:6;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border:3px solid var(--line);
+  background:rgba(3,5,12,.5);color:var(--moon);display:grid;place-items:center;cursor:pointer}
+.sound svg{width:20px;height:20px}
+.star-btn:focus-visible,.btn:focus-visible,.sound:focus-visible,.box:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+@media (max-height:640px){.line{min-height:4em}.dialog{gap:10px}}
+@media (prefers-reduced-motion:reduce){.star-btn svg,.star-btn::before,.star-btn::after,.next,.blink{animation:none}}
+
+/* base que en el artifact pone el envoltorio */
 body{margin:0}
 [hidden]{display:none!important}
 </style>
@@ -84,22 +87,26 @@ body{margin:0}
 <div class="glowlayer" aria-hidden="true"></div>
 <canvas id="fx" aria-hidden="true"></canvas>
 
-<section class="letter hide" id="letter" aria-live="polite">
-  <p class="typed"><span id="typed"></span><span class="caret" aria-hidden="true"></span></p>
+<section class="dialog hide" id="dialog">
+  <div class="box" id="box" tabindex="0" role="button" aria-label="Seguir leyendo">
+    <p class="line" aria-hidden="true"><span id="typed"></span></p>
+    <svg class="next" id="next" viewBox="0 0 5 3" aria-hidden="true" shape-rendering="crispEdges" style="visibility:hidden"><path fill="currentColor" d="M0 0h5v1H4v1H3v1H2V2H1V1H0z"/></svg>
+  </div>
+  <p class="sr" id="sr" aria-live="polite"></p>
   <div class="after" id="after" hidden>
-    <p class="hint">Toca el cielo para soltar un farolito con tu deseo</p>
-    <button class="btn" id="againBtn" type="button">Ver de nuevo</button>
-    <p class="credit">Luna: NASA LRO · Solar System Scope (CC BY 4.0)</p>
+    <p class="hint blink">TOCA EL CIELO Y SUELTA UN FAROLITO</p>
+    <button class="btn" id="againBtn" type="button">OTRA VEZ</button>
+    <p class="credit">luna: NASA LRO / Solar System Scope (CC BY 4.0)</p>
   </div>
 </section>
 
 <div class="intro" id="intro">
-  <p class="eyebrow">Hoy es un día especial</p>
-  <h1>Tengo algo<br><em>para ti</em></h1>
+  <p class="psst">PSST...</p>
+  <h1>TENGO ALGO<br><em>PARA TI</em></h1>
   <button class="star-btn" id="startBtn" type="button" aria-label="Abrir el regalo">
-    <svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M50 2C53 36 64 47 98 50C64 53 53 64 50 98C47 64 36 53 2 50C36 47 47 36 50 2Z"/></svg>
+    <svg viewBox="0 0 9 9" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M4 0h1v2H4zM3 2h3v1H3zM2 3h5v1H2zM0 4h9v1H0zM2 5h5v1H2zM3 6h3v1H3zM4 7h1v2H4z"/></svg>
   </button>
-  <p class="hint">Toca la estrella · mejor con sonido</p>
+  <p class="hint"><span class="blink">TOCA LA ESTRELLA</span><br>(con sonido es mejor)</p>
 </div>
 
 <button class="sound" id="soundBtn" type="button" aria-pressed="false" aria-label="Silenciar" hidden>
@@ -116,14 +123,20 @@ body{margin:0}
   'use strict';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = id => document.getElementById(id);
-  const sky = $('sky'), fx = $('fx'), g = fx.getContext('2d'), typedEl = $('typed');
+  const sky = $('sky'), fx = $('fx'), g = fx.getContext('2d'), typedEl = $('typed'), nextEl = $('next');
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-  const MESSAGE = 'Hoy el cielo se vistió de fiesta por ti.\nCada estrella es un deseo para tu nuevo año: calma, risas, aventuras y gente que te quiera bonito.\nFeliz cumpleaños.';
+  const PAGES = [
+    'Este año quería regalarte algo distinto...',
+    '...así que te traje la luna.',
+    'Bueno, una luna. La de verdad no estaba a la venta.',
+    'Pide un deseo. El mío ya lo pedí, y era para ti.',
+    'Te quiero mucho. Feliz cumple.'
+  ];
 
   /* ================= Sonido: caja de música original ================= */
   let ac = null, master = null, noise = null, muted = false, nextT = 0, step = 0, prevNote = 76, musicTimer = null;
@@ -178,6 +191,14 @@ body{margin:0}
     og.gain.setValueAtTime(.16, t); og.gain.exponentialRampToValueAtTime(.0001, t + .35);
     o.connect(og); og.connect(master); o.start(t); o.stop(t + .4);
     for (let i = 0; i < 6; i++) bell(88 + Math.floor(Math.random() * 12), t + .35 + Math.random() * .6, .012, .4);
+  }
+  // pitido de 8 bits mientras se escribe el texto (va directo a la salida, sin eco)
+  function blip(){
+    if (!ac || muted || ac.state !== 'running') return;
+    const t = ac.currentTime, o = ac.createOscillator(), gn = ac.createGain();
+    o.type = 'square'; o.frequency.value = rand(560, 620);
+    gn.gain.setValueAtTime(.02, t); gn.gain.exponentialRampToValueAtTime(.0001, t + .045);
+    o.connect(gn); gn.connect(ac.destination); o.start(t); o.stop(t + .05);
   }
   // Do – Lam – Fa – Sol – Do – Mim – Fa – Sol, en compás de vals
   const CHORDS = [[60, 4], [57, 3], [53, 4], [55, 4], [60, 4], [52, 3], [53, 4], [55, 4]];
@@ -569,30 +590,48 @@ body{margin:0}
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
   }
 
-  // "Feliz cumpleaños" escrito con estrellas
-  let tparts = [], tState = 'none', tStart = 0;
+  // "FELIZ CUMPLE" en letra de 8 bits: cada píxel de la letra es una estrella
+  const PIXEL = '"Press Start 2P", ui-monospace, monospace';
+  let tparts = [], tState = 'none', tStart = 0, tpix = 6;
+  function glyphCells(line){
+    const S = 64, u = S / 8; // la fuente dibuja en una rejilla de 8x8: a 64px cada píxel mide 8
+    const c = document.createElement('canvas'), o = c.getContext('2d');
+    o.font = `${S}px ${PIXEL}`;
+    const w = Math.ceil(o.measureText(line).width) + S, h = S * 2;
+    c.width = w; c.height = h;
+    o.font = `${S}px ${PIXEL}`; o.textBaseline = 'top'; o.fillStyle = '#fff';
+    o.fillText(line, S / 2, S / 2);
+    const d = o.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 128) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+    }
+    const cells = [];
+    if (maxX < 0) return { w: 1, h: 1, cells };
+    const cw = Math.round((maxX - minX + 1) / u), ch = Math.round((maxY - minY + 1) / u);
+    for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+      const x = Math.min(w - 1, Math.round(minX + (i + .5) * u)), y = Math.min(h - 1, Math.round(minY + (j + .5) * u));
+      if (d[(y * w + x) * 4 + 3] > 128) cells.push([i, j]);
+    }
+    return { w: cw, h: ch, cells };
+  }
   async function buildText(){
-    try { await document.fonts.ready; await document.fonts.load('italic 100px "Instrument Serif"'); } catch (e) {}
-    const lines = W < 720 ? ['Feliz', 'cumpleaños'] : ['Feliz cumpleaños'];
-    const c = document.createElement('canvas'); c.width = W; c.height = H;
-    const o = c.getContext('2d'), font = s => `italic ${s}px "Instrument Serif", Georgia, serif`;
-    let fs = Math.min(lines.length > 1 ? W * .26 : W * .11, H * .15);
-    o.font = font(fs);
-    const mw = Math.max(...lines.map(l => o.measureText(l).width));
-    if (mw > W * .88) { fs *= W * .88 / mw; o.font = font(fs); }
-    const mb = moonBottomPx(), cy = mb + (H - mb) * .42, lh = fs * .92;
-    o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
-    lines.forEach((l, i) => o.fillText(l, W / 2, cy + (i - (lines.length - 1) / 2) * lh));
-    const d = o.getImageData(0, 0, W, H).data, st = Math.max(3, Math.round(fs / 26));
-    const pts = [];
-    for (let y = 0; y < H; y += st) for (let x = 0; x < W; x += st) if (d[(y * W + x) * 4 + 3] > 140) pts.push([x, y]);
-    for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pts[i], pts[j]] = [pts[j], pts[i]]; }
-    const MAX = W < 720 ? 1700 : 2800;
-    tparts = pts.slice(0, MAX).map(([x, y]) => ({
-      tx: x + rand(-1, 1), ty: y + rand(-1, 1), sx: rand(0, W), sy: rand(0, H * .7), cx: rand(-1, 1) * W * .15, cy: rand(-1, 1) * H * .15,
-      d: Math.random() * .9, s: rand(1.3, 3.2), tw: rand(0, 6.283), x: 0, y: 0, vx: 0, vy: 0,
-      c: Math.random() < .7 ? '255,236,205' : (Math.random() < .6 ? '243,200,115' : '255,170,200')
-    }));
+    try { await document.fonts.load(`16px ${PIXEL}`); } catch (e) {}
+    const lines = (W < 720 ? ['FELIZ', 'CUMPLE'] : ['FELIZ CUMPLE']).map(glyphCells);
+    const gap = 4, maxW = Math.max(...lines.map(l => l.w));
+    const rows = lines.reduce((s, l) => s + l.h, 0) + gap * (lines.length - 1);
+    const mb = moonBottomPx(), cy = mb + (H - mb) * .42;
+    tpix = Math.max(3, Math.min(W * .88 / maxW, (H - mb) * .42 / rows));
+    tparts = [];
+    let oy = cy - rows * tpix / 2;
+    for (const l of lines) {
+      const ox = (W - l.w * tpix) / 2;
+      for (const [x, y] of l.cells) tparts.push({
+        tx: ox + (x + .5) * tpix, ty: oy + (y + .5) * tpix, sx: rand(0, W), sy: rand(0, H * .7), cx: rand(-1, 1) * W * .15, cy: rand(-1, 1) * H * .15,
+        d: Math.random() * .9, tw: rand(0, 6.283), x: 0, y: 0, vx: 0, vy: 0, c: Math.random() < .75 ? '255,236,205' : '243,200,115'
+      });
+      oy += (l.h + gap) * tpix;
+    }
     tState = 'form'; tStart = performance.now();
   }
   function disperseText(){
@@ -622,8 +661,9 @@ body{margin:0}
         p.vx *= .99; p.vy = p.vy * .99 - .008; p.x += p.vx; p.y += p.vy;
         a = Math.max(0, 1 - t / 2.4);
       }
-      const s = p.s * 3.2;
-      g.globalAlpha = a; g.drawImage(sprite(p.c), p.x - s / 2, p.y - s / 2, s, s);
+      const s = tpix * 2.2, q = tpix * .62;
+      g.globalAlpha = a * .5; g.drawImage(sprite(p.c), p.x - s / 2, p.y - s / 2, s, s);
+      g.globalAlpha = a; g.fillStyle = `rgb(${p.c})`; g.fillRect(p.x - q / 2, p.y - q / 2, q, q);
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     if (tState === 'form' && t > 2.4 && !reduce && Math.random() < .35 && tparts.length) {
@@ -642,7 +682,17 @@ body{margin:0}
     const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
     if (moved > 6) { dragY = clamp(dragY + dx * .005, -1.2, 1.2); dragX = clamp(dragX + dy * .004, -.6, .6); }
   });
-  sky.addEventListener('pointerup', e => { if (dragging && moved < 8 && started) tap(e.clientX, e.clientY); dragging = false; });
+  sky.addEventListener('pointerup', e => { if (dragging && moved < 8 && started && !dialogTap()) tap(e.clientX, e.clientY); dragging = false; });
+
+  // Caja de diálogo: tocar acelera el texto o pasa a la siguiente página
+  let advance = null, typing = false, skipType = false;
+  function dialogTap(){
+    if (advance) { advance(); return true; }
+    if (typing) { skipType = true; return true; }
+    return false;
+  }
+  $('box').addEventListener('click', dialogTap);
+  $('box').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dialogTap(); } });
   sky.addEventListener('pointercancel', () => { dragging = false; });
 
   function tap(x, y){
@@ -654,18 +704,37 @@ body{margin:0}
 
   let runId = 0;
   async function typeText(s, id){
-    typedEl.textContent = '';
-    for (const ch of s) {
-      if (id !== runId) return;
+    typedEl.textContent = ''; typing = true; skipType = false;
+    for (let k = 0; k < s.length; k++) {
+      if (id !== runId) { typing = false; return; }
+      if (skipType) { typedEl.textContent = s; break; }
+      const ch = s[k];
       typedEl.textContent += ch;
-      await sleep(reduce ? 0 : ch === '\n' ? 520 : /[.,:]/.test(ch) ? 280 : 38);
+      if (ch !== ' ' && k % 2 === 0) blip();
+      await sleep(reduce ? 0 : /[.,]/.test(ch) ? 200 : 45);
+    }
+    typing = false;
+  }
+  function waitTap(ms){
+    return new Promise(res => {
+      const done = () => { clearTimeout(timer); advance = null; nextEl.style.visibility = 'hidden'; res(); };
+      const timer = setTimeout(done, ms);
+      advance = done; nextEl.style.visibility = 'visible';
+    });
+  }
+  async function typePages(id){
+    for (let i = 0; i < PAGES.length; i++) {
+      $('sr').textContent = PAGES[i];
+      await typeText(PAGES[i], id); if (id !== runId) return;
+      if (i < PAGES.length - 1) { await waitTap(reduce ? 4000 : 2600); if (id !== runId) return; }
     }
   }
   const fireX = () => Math.random() < .5 ? rand(.08, .3) * W : rand(.7, .92) * W;
   async function play(){
     const id = ++runId;
-    finalMode = false;
-    $('letter').classList.add('hide'); $('after').hidden = true;
+    if (advance) advance();
+    finalMode = false; typing = false;
+    $('dialog').classList.add('hide'); $('after').hidden = true;
     await sleep(600); if (id !== runId) return;
     typedEl.textContent = '';
     await buildText(); if (id !== runId) return;
@@ -676,8 +745,8 @@ body{margin:0}
     await sleep(n * 620 + 1600); if (id !== runId) return;
     disperseText();
     await sleep(900); if (id !== runId) return;
-    $('letter').classList.remove('hide');
-    await typeText(MESSAGE, id); if (id !== runId) return;
+    $('dialog').classList.remove('hide');
+    await typePages(id); if (id !== runId) return;
     $('after').hidden = false; finalMode = true;
   }
   async function begin(){
