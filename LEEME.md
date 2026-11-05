@@ -7,6 +7,7 @@ Páginas-regalo publicadas con GitHub Pages: **https://master4326.github.io/rega
 | `index.html` | portada con los enlaces | `/regalos/` |
 | `calendario/` | el calendario de un año de canciones | `/regalos/calendario/` |
 | `luna/` | la luna en 3D entre estrellas, con fuegos artificiales, carta y farolitos | `/regalos/luna/` |
+| `piano/` | el piano de luz que toca "In the Pool" y también se puede tocar | `/regalos/piano/` |
 | `pa-tu-amarillo.html` | la lámina índigo con lirios amarillos | `/regalos/pa-tu-amarillo.html` |
 | `pa-tu.html` | la lámina original, papel crema | `/regalos/pa-tu.html` |
 | `consola-del-corazon.html` | la consola retro | `/regalos/consola-del-corazon.html` |
@@ -20,6 +21,12 @@ La luna (`luna/`) también es carpeta: trae al lado de su `index.html` las dos
 texturas de la luna (`moon-color.jpg`, el color, y `moon-height.jpg`, el relieve).
 Usa three.js desde cdnjs. Ábrela desde el enlace: con doble clic el navegador no
 deja usar las fotos y sale una luna de respaldo, más sencilla.
+
+El piano (`piano/`) también es carpeta: `index.html` es el piano, `cancion.js`
+trae la canción ("In the Pool", convertida de un MIDI) y `sonido.js` trae las
+muestras del piano (Salamander Grand Piano, de Alexander Holm, licencia CC BY 3.0)
+metidas dentro del JS, así que funciona igual con doble clic que desde el enlace.
+Para cambiar la canción basta con cambiar `cancion.js`.
 
 Cada una de las demás páginas es un HTML suelto y autónomo (solo carga fuentes de Google), así que
 funciona igual abriéndola con doble clic que desde el enlace.

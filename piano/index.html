@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Un piano para ti</title>
+<style>
+  :root{--cian:#5bf8fb}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000}
+  body{
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #medida{position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none}
+  #tocar{
+    position:fixed;
+    top:calc(18px + env(safe-area-inset-top,0px));
+    right:calc(18px + env(safe-area-inset-right,0px));
+    width:48px;height:48px;margin:0;padding:0;
+    display:grid;place-items:center;
+    border-radius:50%;
+    border:1.5px solid rgba(91,248,252,.55);
+    background:rgba(3,12,28,.6);
+    color:var(--cian);
+    cursor:pointer;
+    box-shadow:0 0 14px rgba(59,214,255,.28),inset 0 0 10px rgba(59,214,255,.12);
+    transition:transform .15s ease,box-shadow .25s ease,border-color .25s ease,color .25s ease;
+  }
+  #tocar:hover{border-color:rgba(91,248,252,.95);box-shadow:0 0 24px rgba(59,214,255,.5),inset 0 0 12px rgba(59,214,255,.2)}
+  #tocar:active{transform:scale(.94)}
+  #tocar:focus-visible{outline:2px solid var(--cian);outline-offset:4px}
+  #tocar svg{grid-area:1/1;width:20px;height:20px;filter:drop-shadow(0 0 4px rgba(91,248,252,.7))}
+  #tocar .pausa{display:none}
+  #tocar.sonando .play{display:none}
+  #tocar.sonando .pausa{display:block}
+  #tocar.cargando{color:rgba(91,248,252,.35);border-color:rgba(91,248,252,.2);cursor:progress}
+  #tocar.cargando::after{
+    content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2px solid transparent;border-top-color:var(--cian);
+    animation:girar .8s linear infinite;
+  }
+  @keyframes girar{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){
+    #tocar{transition:none}
+    #tocar.cargando::after{animation-duration:2.4s}
+  }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<div id="medida"></div>
+<button id="tocar" class="cargando" type="button" aria-label="Tocar la canción">
+  <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+  <svg class="pausa" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.2" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2" fill="currentColor"/></svg>
+</button>
+<script src="cancion.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const lienzo = document.getElementById('lienzo');
+  const g = lienzo.getContext('2d');
+  const boton = document.getElementById('tocar');
+  const medida = document.getElementById('medida');
+  const fondo = document.createElement('canvas');
+  const niebla = document.createElement('canvas');
+
+  const NEGRA = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+  const LADO = { 1: -0.1, 3: 0.1, 6: -0.12, 8: 0, 10: 0.12 };
+  const CAIDA = 3.2;
+  const INICIO = -(CAIDA + 0.4);
+  const NOTA = '#5bf8fb';
+  const NOTA_VIVA = '#d4feff';
+  const HALO = [[8, 0.03], [5, 0.045], [2.5, 0.07]];
+
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx;
+  try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+
+  const limitador = ctx.createDynamicsCompressor();
+  limitador.threshold.value = -6;
+  limitador.knee.value = 6;
+  limitador.ratio.value = 8;
+  limitador.attack.value = 0.001;
+  limitador.release.value = 0.25;
+  const techo = ctx.createWaveShaper();
+  techo.curve = (() => {
+    const n = 4096, c = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * 2 - 1, a = Math.abs(x);
+      c[i] = Math.sign(x) * (a < 0.8 ? a : 0.8 + 0.18 * Math.tanh((a - 0.8) / 0.18));
+    }
+    return c;
+  })();
+  techo.oversample = '2x';
+  limitador.connect(techo);
+  techo.connect(ctx.destination);
+  const agudo = ctx.createBiquadFilter();
+  agudo.type = 'highshelf';
+  agudo.frequency.value = 7000;
+  agudo.gain.value = -2;
+  agudo.connect(limitador);
+  const grave = ctx.createBiquadFilter();
+  grave.type = 'lowshelf';
+  grave.frequency.value = 180;
+  grave.gain.value = 1.5;
+  grave.connect(agudo);
+  const maestro = ctx.createGain();
+  maestro.gain.value = 2.4;
+  maestro.connect(grave);
+  const piano = ctx.createGain();
+  piano.connect(maestro);
+  const sala = ctx.createConvolver();
+  sala.buffer = impulso(3.2);
+  const eco = ctx.createGain();
+  eco.gain.value = 0.34;
+  piano.connect(sala);
+  sala.connect(eco);
+  eco.connect(maestro);
+
+  function impulso(seg) {
+    const sr = ctx.sampleRate, pre = Math.floor(sr * 0.018), n = pre + Math.floor(sr * seg);
+    const b = ctx.createBuffer(2, n, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = b.getChannelData(c);
+      for (let r = 0; r < 16; r++) {
+        const t = 0.006 + Math.random() * 0.075;
+        d[pre + Math.floor(t * sr)] += (Math.random() < 0.5 ? -1 : 1) * 0.55 * Math.exp(-t * 18);
+      }
+      let s = 0;
+      for (let i = pre; i < n; i++) {
+        const t = (i - pre) / sr;
+        s += (Math.random() * 2 - 1 - s) * (0.9 - 0.75 * t / seg);
+        d[i] += s * 0.6 * Math.exp(-t * 6.9 / seg) * Math.min(1, t / 0.03);
+      }
+    }
+    return b;
+  }
+
+  const frec = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  const tauDe = (m) => m >= 89 ? 1.4 : m < 45 ? 0.38 : m < 66 ? 0.26 : 0.18;
+
+  const muestras = new Map();
+  const cercana = new Int16Array(128);
+  let estado = 'cargando';
+  let pendiente = false;
+
+  function decodificar(b64) {
+    const bin = atob(b64), n = bin.length, bytes = new Uint8Array(n);
+    for (let i = 0; i < n; i++) bytes[i] = bin.charCodeAt(i);
+    return new Promise((ok, mal) => {
+      const p = ctx.decodeAudioData(bytes.buffer, ok, mal);
+      if (p && p.then) p.then(ok, mal);
+    });
+  }
+
+  function arranque(buf) {
+    const d = buf.getChannelData(0), lim = Math.min(d.length, Math.floor(buf.sampleRate * 0.25));
+    for (let i = 0; i < lim; i++) if (Math.abs(d[i]) > 0.003) return Math.max(0, i / buf.sampleRate - 0.003);
+    return 0;
+  }
+
+  function cargar() {
+    const terminar = () => {
+      if (muestras.size) {
+        const claves = [...muestras.keys()];
+        for (let m = 0; m < 128; m++) cercana[m] = claves.reduce((a, b) => Math.abs(b - m) < Math.abs(a - m) ? b : a);
+      }
+      estado = 'listo';
+      boton.classList.remove('cargando');
+      if (pendiente) { pendiente = false; empezar(); }
+    };
+    const s = document.createElement('script');
+    s.src = 'sonido.js';
+    s.onerror = terminar;
+    s.onload = () => {
+      const datos = window.MUESTRAS_PIANO && window.MUESTRAS_PIANO.notas;
+      if (!datos) { terminar(); return; }
+      Promise.all(Object.keys(datos).map(k => decodificar(datos[k])
+        .then(buf => { muestras.set(Number(k), { buf, ini: arranque(buf) }); })
+        .catch(() => {})
+      )).then(() => { window.MUESTRAS_PIANO = null; terminar(); });
+    };
+    document.head.appendChild(s);
+  }
+
+  const voces = new Set();
+  const ultima = new Map();
+
+  function sonar(m, v, t) {
+    t = Math.max(t, ctx.currentTime);
+    const previa = ultima.get(m);
+    if (previa) apagar(previa, t, 0.05);
+    const voz = muestras.size ? deMuestra(m, v, t) : sintetica(m, v, t);
+    voz.m = m;
+    voz.fin = false;
+    voz.apagando = 0;
+    voces.add(voz);
+    ultima.set(m, voz);
+    voz.src.onended = () => {
+      voz.fin = true;
+      voces.delete(voz);
+      if (ultima.get(m) === voz) ultima.delete(m);
+      try { voz.salida.disconnect(); } catch (e) {}
+    };
+    if (voces.size > 80) {
+      for (const x of voces) {
+        if (x !== voz && !(x.apagando && x.apagando <= t)) { apagar(x, t, 0.08); break; }
+      }
+    }
+    return voz;
+  }
+
+  function apagar(voz, t, tau) {
+    if (!voz || voz.fin) return;
+    t = Math.max(t, ctx.currentTime);
+    if (voz.apagando && voz.apagando <= t) return;
+    voz.apagando = t;
+    const gan = voz.nivel.gain;
+    gan.cancelScheduledValues(t);
+    gan.setTargetAtTime(0, t, tau);
+    try { voz.src.stop(t + tau * 9); } catch (e) {}
+  }
+
+  function deMuestra(m, v, t) {
+    const k = cercana[m], mu = muestras.get(k);
+    const src = ctx.createBufferSource();
+    src.buffer = mu.buf;
+    src.playbackRate.value = Math.pow(2, (m - k) / 12);
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.Q.value = 0.3;
+    filtro.frequency.value = Math.min(18000, Math.max(frec(m) * 7, 900 + 15500 * v * v));
+    const nivel = ctx.createGain();
+    nivel.gain.value = 0.05 + 0.95 * Math.pow(v, 1.7);
+    src.connect(filtro);
+    filtro.connect(nivel);
+    let salida = nivel;
+    if (ctx.createStereoPanner) {
+      const p = ctx.createStereoPanner();
+      p.pan.value = Math.max(-0.4, Math.min(0.4, (m - 64) / 70));
+      nivel.connect(p);
+      salida = p;
+    }
+    salida.connect(piano);
+    src.start(t, mu.ini);
+    return { src, nivel, salida };
+  }
+
+  let onda = null;
+  function sintetica(m, v, t) {
+    if (!onda) {
+      const n = 24, re = new Float32Array(n), im = new Float32Array(n);
+      for (let k = 1; k < n; k++) im[k] = Math.pow(k, -1.5) * (1 + 0.3 * Math.sin(k * 1.7));
+      onda = ctx.createPeriodicWave(re, im);
+    }
+    const f = frec(m), src = ctx.createOscillator();
+    src.setPeriodicWave(onda);
+    src.frequency.value = f;
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.frequency.setValueAtTime(Math.min(16000, f * (3 + 9 * v)), t);
+    filtro.frequency.setTargetAtTime(f * 1.4, t, 0.5);
+    const nivel = ctx.createGain(), a = 0.04 + 0.4 * v * v;
+    nivel.gain.setValueAtTime(0, t);
+    nivel.gain.linearRampToValueAtTime(a, t + 0.005);
+    nivel.gain.setTargetAtTime(0, t + 0.005, 0.5 + 2.5 * Math.pow(2, -(m - 48) / 18));
+    src.connect(filtro);
+    filtro.connect(nivel);
+    nivel.connect(piano);
+    src.start(t);
+    src.stop(t + 10);
+    return { src, nivel, salida: nivel };
+  }
+
+  let despierto = false;
+  function despertar() {
+    if (ctx.state !== 'running') {
+      const p = ctx.resume();
+      if (p && p.catch) p.catch(() => {});
+    }
+    if (!despierto) {
+      despierto = true;
+      const s = ctx.createBufferSource();
+      s.buffer = ctx.createBuffer(1, 1, 22050);
+      s.connect(ctx.destination);
+      s.start(0);
+    }
+  }
+
+  function relojVisual() {
+    const ahora = ctx.currentTime;
+    if (ctx.getOutputTimestamp) {
+      const ts = ctx.getOutputTimestamp();
+      if (ts && ts.contextTime > 0 && ts.performanceTime > 0) {
+        const t = ts.contextTime + (performance.now() - ts.performanceTime) / 1000;
+        return Math.min(ahora, Math.max(ahora - 0.4, t));
+      }
+    }
+    return ahora - (ctx.outputLatency || 0);
+  }
+
+  const C = window.CANCION || { tempos: [[0, 60]], notas: [], pedal: [] };
+
+  function crearReloj(tempos) {
+    const tramos = [...tempos].sort((a, b) => a[0] - b[0]);
+    return (b) => {
+      let s = 0;
+      for (let i = 0; i < tramos.length; i++) {
+        const [desde, bpm] = tramos[i];
+        if (b <= desde) break;
+        const hasta = i + 1 < tramos.length ? Math.min(b, tramos[i + 1][0]) : b;
+        s += (hasta - desde) * 60 / bpm;
+      }
+      return s;
+    };
+  }
+
+  const segundos = crearReloj(C.tempos);
+  const eventos = C.notas.map(n => {
+    const fin = n.t + n.d;
+    let suelta = fin;
+    for (const [a, b] of C.pedal || []) {
+      if (fin >= a && fin < b) { suelta = b; break; }
+    }
+    return { m: n.m, v: n.v, ini: segundos(n.t), fin: segundos(fin), suelta: segundos(suelta) };
+  }).sort((a, b) => a.ini - b.ini);
+  const DURACION = eventos.reduce((x, e) => Math.max(x, e.suelta), 0) + 1.5;
+  const LARGO = eventos.reduce((x, e) => Math.max(x, e.fin - e.ini), 0) + 0.1;
+
+  function buscar(t) {
+    let a = 0, b = eventos.length;
+    while (a < b) {
+      const c = (a + b) >> 1;
+      if (eventos[c].ini < t) a = c + 1; else b = c;
+    }
+    return a;
+  }
+
+  const rep = { sonando: false, origen: 0, pos: INICIO, sig: 0, vsig: 0, programadas: [] };
+
+  function empezar() {
+    despertar();
+    if (estado !== 'listo') { pendiente = true; return; }
+    if (rep.pos >= DURACION || rep.pos <= INICIO) rep.pos = INICIO;
+    rep.origen = ctx.currentTime + 0.12 - rep.pos;
+    rep.sig = buscar(rep.pos);
+    rep.vsig = rep.sig;
+    rep.sonando = true;
+    boton.classList.add('sonando');
+    boton.setAttribute('aria-label', 'Pausar');
+  }
+
+  function pausar(final) {
+    if (!rep.sonando) return;
+    const ahora = ctx.currentTime;
+    rep.pos = final ? INICIO : ahora - rep.origen;
+    rep.sonando = false;
+    for (const v of rep.programadas) apagar(v, ahora, v.inicio > ahora ? 0.005 : 0.35);
+    rep.programadas = [];
+    boton.classList.remove('sonando');
+    boton.setAttribute('aria-label', 'Tocar la canción');
+  }
+
+  function programar() {
+    if (!rep.sonando) return;
+    const limite = ctx.currentTime + 0.2;
+    while (rep.sig < eventos.length && rep.origen + eventos[rep.sig].ini < limite) {
+      const e = eventos[rep.sig++];
+      const t = rep.origen + e.ini;
+      if (t < ctx.currentTime - 0.05) continue;
+      const voz = sonar(e.m, e.v, t);
+      voz.inicio = t;
+      apagar(voz, rep.origen + e.suelta, tauDe(e.m));
+      rep.programadas.push(voz);
+    }
+    if (rep.programadas.length > 96) rep.programadas = rep.programadas.filter(v => !v.fin);
+  }
+
+  const luz = Array.from({ length: 128 }, () => ({ presion: 0, sujeta: false, cancion: false, desde: -9, emitir: 0 }));
+  const sujetas = new Map();
+  const retenidas = new Set();
+  let pedal = false;
+
+  function pulsar(m, v) {
+    despertar();
+    const s = sujetas.get(m);
+    if (s) { s.cuenta++; return; }
+    const voz = estado === 'listo' ? sonar(m, v, ctx.currentTime) : null;
+    sujetas.set(m, { voz, cuenta: 1 });
+    luz[m].sujeta = true;
+    destello(m, v);
+  }
+
+  function liberar(m) {
+    const s = sujetas.get(m);
+    if (!s || --s.cuenta > 0) return;
+    sujetas.delete(m);
+    luz[m].sujeta = false;
+    if (!s.voz) return;
+    if (pedal) retenidas.add(s.voz);
+    else apagar(s.voz, ctx.currentTime, tauDe(m));
+  }
+
+  function soltarPedal() {
+    pedal = false;
+    for (const v of retenidas) apagar(v, ctx.currentTime, tauDe(v.m));
+    retenidas.clear();
+  }
+
+  let W = 0, H = 0, dpr = 1, kbH = 0, y0 = 0, hitY = 0, ww = 0, bw = 0, bh = 0, lo = 48, hi = 84;
+  let blancas = [], negras = [], tecla = [];
+  let gBlanca, gBlancaLuz, gLabio, gNegra, gNegraLuz, gFrente, gBrilloAbajo, gBrilloArriba;
+  let reloj = 0;
+  let altoNiebla = 0;
+
+  const blancasEntre = (a, b) => { let n = 0; for (let m = a; m <= b; m++) if (!NEGRA[m % 12]) n++; return n; };
+
+  function rango() {
+    lo = 48; hi = 84;
+    for (const e of eventos) { if (e.m < lo) lo = e.m; if (e.m > hi) hi = e.m; }
+    lo = Math.max(21, lo - (lo % 12));
+    hi = Math.min(108, hi + ((12 - (hi % 12)) % 12));
+    for (;;) {
+      if (lo <= 21 && hi >= 108) break;
+      const abajo = lo > 21 && (hi >= 108 || (60 - lo) <= (hi - 60));
+      const nlo = abajo ? Math.max(21, lo - 12) : lo;
+      const nhi = abajo ? hi : Math.min(108, hi + 12);
+      if (W / blancasEntre(nlo, nhi) < 22) break;
+      lo = nlo; hi = nhi;
+    }
+  }
+
+  function medir() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    lienzo.width = Math.round(W * dpr);
+    lienzo.height = Math.round(H * dpr);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    rango();
+    ww = W / blancasEntre(lo, hi);
+    kbH = Math.round(Math.max(96, Math.min(210, H * 0.22, ww * 6.6)));
+    const base = Math.round(Math.max(10, Math.min(48, H * 0.045)));
+    y0 = Math.round(H - medida.offsetHeight - base - kbH);
+    hitY = y0;
+    bw = ww * 0.58;
+    bh = Math.round(kbH * 0.63);
+    blancas = []; negras = []; tecla = [];
+    let i = 0;
+    for (let m = lo; m <= hi; m++) {
+      if (NEGRA[m % 12]) {
+        const cx = i * ww + LADO[m % 12] * ww;
+        const k = { m, negra: true, x: cx - bw / 2, cx, ancho: bw * 0.95 };
+        negras.push(k); tecla[m] = k;
+      } else {
+        const k = { m, negra: false, x: i * ww, cx: i * ww + ww / 2, ancho: ww * 0.84 };
+        blancas.push(k); tecla[m] = k;
+        i++;
+      }
+    }
+    degradados();
+    pintarFondo();
+    prepararHumo();
+  }
+
+  function vertical(desde, hasta, paradas) {
+    const gr = g.createLinearGradient(0, desde, 0, hasta);
+    for (const [p, c] of paradas) gr.addColorStop(p, c);
+    return gr;
+  }
+
+  function degradados() {
+    gBlanca = vertical(y0, y0 + kbH, [[0, '#4a73bd'], [0.06, '#7d9dcf'], [0.22, '#b8c7da'], [0.5, '#d2dae1'], [1, '#e1e6e9']]);
+    gBlancaLuz = vertical(y0, y0 + kbH, [[0, 'rgba(150,252,255,.95)'], [0.45, 'rgba(91,248,252,.4)'], [0.85, 'rgba(91,248,252,0)']]);
+    gLabio = vertical(y0 + kbH - 8, y0 + kbH, [[0, '#a6aeb4'], [1, '#69717a']]);
+    gNegra = vertical(y0, y0 + bh, [[0, '#0b2756'], [0.12, '#070b16'], [0.8, '#11151d'], [1, '#1b2029']]);
+    gNegraLuz = vertical(y0, y0 + bh, [[0, 'rgba(91,248,252,.85)'], [0.75, 'rgba(91,248,252,0)']]);
+    gFrente = vertical(y0 + bh * 0.84, y0 + bh, [[0, '#2d3542'], [1, '#0a0d12']]);
+    gBrilloAbajo = vertical(hitY, hitY + 16, [[0, 'rgba(30,150,235,.7)'], [1, 'rgba(16,107,196,0)']]);
+    gBrilloArriba = vertical(hitY - 14, hitY, [[0, 'rgba(0,129,212,0)'], [1, 'rgba(0,140,230,.75)']]);
+  }
+
+  function pintarFondo() {
+    fondo.width = lienzo.width;
+    fondo.height = lienzo.height;
+    const f = fondo.getContext('2d');
+    f.setTransform(dpr, 0, 0, dpr, 0, 0);
+    f.fillStyle = '#000';
+    f.fillRect(0, 0, W, H);
+    altoNiebla = Math.min(300, Math.max(110, hitY * 0.4));
+    niebla.width = Math.max(1, Math.round(W * dpr));
+    niebla.height = Math.max(1, Math.round(altoNiebla * dpr));
+    const n = niebla.getContext('2d');
+    n.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const gr = n.createLinearGradient(0, 0, 0, altoNiebla);
+    [[0, 'rgba(0,0,0,0)'], [0.44, 'rgb(0,16,42)'], [0.71, 'rgb(0,24,76)'], [0.84, 'rgb(2,40,107)'],
+     [0.91, 'rgb(2,57,148)'], [0.96, 'rgb(0,89,196)'], [1, 'rgb(0,129,212)']].forEach(([p, c]) => gr.addColorStop(p, c));
+    n.fillStyle = gr;
+    n.fillRect(0, 0, W, altoNiebla);
+    altoVelo = Math.round(Math.min(220, Math.max(70, hitY * 0.3)));
+    velo.width = Math.max(1, Math.round(W * dpr));
+    velo.height = Math.max(1, Math.round(altoVelo * dpr));
+    vc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    gMascara = vc.createLinearGradient(0, 0, 0, altoVelo);
+    [[0, 'rgba(0,0,0,0)'], [0.3, 'rgba(0,0,0,.15)'], [0.6, 'rgba(0,0,0,.5)'], [0.85, 'rgba(0,0,0,.95)'], [1, 'rgba(0,0,0,.8)']]
+      .forEach(([p, c]) => gMascara.addColorStop(p, c));
+  }
+
+  function sprite(paradas, s) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = s;
+    const x = cv.getContext('2d');
+    const gr = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    for (const [p, c] of paradas) gr.addColorStop(p, c);
+    x.fillStyle = gr;
+    x.fillRect(0, 0, s, s);
+    return cv;
+  }
+  const CHISPA = sprite([[0, 'rgba(255,255,255,1)'], [0.22, 'rgba(205,252,255,.95)'], [0.5, 'rgba(91,248,252,.3)'], [1, 'rgba(91,248,252,0)']], 32);
+  const FLARE = sprite([[0, 'rgba(255,255,255,1)'], [0.14, 'rgba(180,248,255,.85)'], [0.42, 'rgba(40,170,255,.3)'], [1, 'rgba(20,120,255,0)']], 128);
+  const NUBE = sprite([[0, 'rgba(30,120,255,.9)'], [0.4, 'rgba(10,80,220,.4)'], [0.75, 'rgba(0,50,170,.1)'], [1, 'rgba(0,40,150,0)']], 128);
+  const NUBE_CIAN = sprite([[0, 'rgba(120,240,255,.9)'], [0.35, 'rgba(40,170,255,.4)'], [0.75, 'rgba(10,90,220,.08)'], [1, 'rgba(0,60,200,0)']], 128);
+
+  function ruido(w, h, cx, cy, octavas) {
+    const campo = new Float32Array(w * h);
+    let amp = 1, total = 0;
+    for (let o = 0; o < octavas; o++, cx *= 2, cy *= 2, amp *= 0.5) {
+      const red = new Float32Array(cx * cy);
+      for (let i = 0; i < red.length; i++) red[i] = Math.random();
+      total += amp;
+      for (let py = 0; py < h; py++) {
+        const fy = py * cy / h, iy = fy | 0, ty = fy - iy, sy = ty * ty * (3 - 2 * ty);
+        const f0 = (iy % cy) * cx, f1 = ((iy + 1) % cy) * cx;
+        for (let px = 0; px < w; px++) {
+          const fx = px * cx / w, ix = fx | 0, tx = fx - ix, sx = tx * tx * (3 - 2 * tx);
+          const c0 = ix % cx, c1 = (ix + 1) % cx;
+          const a = red[f0 + c0], b = red[f0 + c1], c = red[f1 + c0], d = red[f1 + c1];
+          campo[py * w + px] += amp * (a + (b - a) * sx + (c - a + (a - b - c + d) * sx) * sy);
+        }
+      }
+    }
+    for (let i = 0; i < campo.length; i++) campo[i] /= total;
+    return campo;
+  }
+
+  function texturaHumo(w, h) {
+    const base = ruido(w, h, 4, 2, 5), gx = ruido(w, h, 3, 2, 3), gy = ruido(w, h, 3, 2, 3);
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    const x = cv.getContext('2d');
+    const img = x.createImageData(w, h), d = img.data;
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const i = py * w + px;
+        let sx = px + (gx[i] - 0.5) * 150, sy = py + (gy[i] - 0.5) * 70;
+        sx = ((sx % w) + w) % w;
+        sy = ((sy % h) + h) % h;
+        const x0 = sx | 0, y0 = sy | 0, x1 = (x0 + 1) % w, y1 = (y0 + 1) % h, tx = sx - x0, ty = sy - y0;
+        const a = base[y0 * w + x0], b = base[y0 * w + x1], c = base[y1 * w + x0], e = base[y1 * w + x1];
+        const v = a + (b - a) * tx + (c - a + (a - b - c + e) * tx) * ty;
+        let k = (v - 0.36) / 0.42;
+        k = k < 0 ? 0 : k > 1 ? 1 : k;
+        k = k * k * (3 - 2 * k);
+        d[i * 4] = 40;
+        d[i * 4 + 1] = 130;
+        d[i * 4 + 2] = 255;
+        d[i * 4 + 3] = Math.round(k * 255);
+      }
+    }
+    x.putImageData(img, 0, 0);
+    return cv;
+  }
+
+  const TEX = texturaHumo(512, 256);
+  const velo = document.createElement('canvas');
+  const vc = velo.getContext('2d');
+  const patronA = vc.createPattern(TEX, 'repeat');
+  const patronB = vc.createPattern(TEX, 'repeat');
+  const conVelo = !!(patronA && patronA.setTransform && typeof DOMMatrix === 'function');
+  const matA = conVelo ? new DOMMatrix() : null;
+  const matB = conVelo ? new DOMMatrix() : null;
+  let altoVelo = 0, gMascara = null;
+
+  let humo = [], soplos = [], ondas = [], corrientes = [], energia = 0;
+
+  function nube(inicial) {
+    const vida = 7 + Math.random() * 7;
+    const vy = -(5 + Math.random() * 14);
+    const edad = inicial ? Math.random() * vida : 0;
+    return {
+      x: Math.random() * W,
+      y: hitY - 6 + vy * edad,
+      vx: (Math.random() - 0.5) * 12,
+      vy,
+      edad,
+      vida,
+      tam: altoNiebla * (0.55 + Math.random() * 0.7),
+      fase: Math.random() * 6.283,
+      a: 0.06 + Math.random() * 0.08
+    };
+  }
+
+  function prepararHumo() {
+    humo = Array.from({ length: Math.round(W / 45) + 6 }, () => nube(true));
+    corrientes = Array.from({ length: 4 }, (_, i) => ({
+      x: Math.random() * W,
+      v: (i % 2 ? -1 : 1) * (50 + Math.random() * 90),
+      largo: W * (0.12 + Math.random() * 0.16),
+      fase: Math.random() * 6.283
+    }));
+  }
+
+  function punto(spr, x, y, s, a) {
+    if (a <= 0.003) return;
+    g.globalAlpha = a > 1 ? 1 : a;
+    g.drawImage(spr, x - s / 2, y - s / 2, s, s);
+  }
+
+  function estirado(spr, x, y, w, h, a) {
+    if (a <= 0.003) return;
+    g.globalAlpha = a > 1 ? 1 : a;
+    g.drawImage(spr, x - w / 2, y - h / 2, w, h);
+  }
+
+  const chispas = [];
+  const rayos = [];
+
+  function chispa(k, fuerte) {
+    if (chispas.length >= 1600) return;
+    chispas.push({
+      x: k.cx + (Math.random() - 0.5) * k.ancho,
+      y: hitY - Math.random() * 6,
+      vx: (Math.random() - 0.5) * 30,
+      vy: -(45 + Math.random() * (fuerte ? 190 : 130)),
+      edad: 0,
+      vida: 0.7 + Math.random() * 1.5,
+      tam: 5 + Math.random() * 7,
+      fase: Math.random() * 6.283
+    });
+  }
+
+  function destello(m, v) {
+    luz[m].desde = reloj;
+    const k = tecla[m];
+    if (!k) return;
+    for (let i = 0; i < 14; i++) chispa(k, true);
+    if (soplos.length < 80) soplos.push({ x: k.cx, y: hitY - 8, vy: -(18 + Math.random() * 22), edad: 0, vida: 1.6 + Math.random() * 1.2, tam: Math.max(70, ww * 4.5), a: 0.1 + 0.14 * v });
+    if (ondas.length < 60) ondas.push({ x: k.cx, t: 0, a: 0.5 + 0.5 * v });
+    for (let i = 0, n = 1 + Math.round(v * 2); i < n; i++) {
+      rayos.push({
+        x: k.cx + (Math.random() - 0.5) * ww,
+        y: hitY - 2,
+        vx: (Math.random() - 0.5) * 260,
+        vy: -(150 + Math.random() * 230),
+        edad: 0,
+        vida: 0.22 + Math.random() * 0.3
+      });
+    }
+  }
+
+  function redondo(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  function forma(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, h, w / 2));
+    g.beginPath();
+    g.moveTo(x, y);
+    g.lineTo(x + w, y);
+    g.lineTo(x + w, y + h - r);
+    g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    g.lineTo(x + r, y + h);
+    g.quadraticCurveTo(x, y + h, x, y + h - r);
+    g.closePath();
+  }
+
+  function actualizar(ts, dt) {
+    if (rep.sonando) {
+      while (rep.vsig < eventos.length && eventos[rep.vsig].ini <= ts) {
+        const e = eventos[rep.vsig++];
+        if (ts - e.ini < 0.25) destello(e.m, e.v);
+      }
+    }
+    for (let m = 21; m <= 108; m++) luz[m].cancion = false;
+    for (let i = buscar(ts - LARGO); i < eventos.length && eventos[i].ini <= ts; i++) {
+      const e = eventos[i];
+      if (e.fin > ts) luz[e.m].cancion = true;
+    }
+    let activas = 0;
+    for (let m = lo; m <= hi; m++) {
+      const L = luz[m], activa = L.sujeta || L.cancion;
+      if (activa) activas++;
+      L.presion += ((activa ? 1 : 0) - L.presion) * Math.min(1, dt * 30);
+      if (L.sujeta || (L.cancion && rep.sonando)) {
+        L.emitir += (reloj - L.desde < 0.3 ? 120 : 38) * dt;
+        while (L.emitir >= 1) { L.emitir -= 1; chispa(tecla[m], false); }
+      } else {
+        L.emitir = 0;
+      }
+    }
+    for (let i = chispas.length - 1; i >= 0; i--) {
+      const p = chispas[i];
+      p.edad += dt;
+      if (p.edad >= p.vida) { chispas[i] = chispas[chispas.length - 1]; chispas.pop(); continue; }
+      p.vx += Math.sin(reloj * 2.3 + p.fase + p.y * 0.035) * 70 * dt;
+      p.vx *= Math.pow(0.4, dt);
+      p.vy *= Math.pow(0.55, dt);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+    }
+    for (let i = rayos.length - 1; i >= 0; i--) {
+      const r = rayos[i];
+      r.edad += dt;
+      if (r.edad >= r.vida) { rayos[i] = rayos[rayos.length - 1]; rayos.pop(); continue; }
+      r.vy *= Math.pow(0.2, dt);
+      r.vx *= Math.pow(0.2, dt);
+      r.x += r.vx * dt;
+      r.y += r.vy * dt;
+    }
+    energia += (Math.min(1, activas / 6) - energia) * Math.min(1, dt * 2.5);
+    for (let i = 0; i < humo.length; i++) {
+      const p = humo[i];
+      p.edad += dt;
+      if (p.edad >= p.vida) { humo[i] = nube(false); continue; }
+      p.x += (p.vx + Math.sin(reloj * 0.45 + p.fase) * 9) * dt;
+      p.y += p.vy * dt;
+    }
+    for (let i = soplos.length - 1; i >= 0; i--) {
+      const p = soplos[i];
+      p.edad += dt;
+      if (p.edad >= p.vida) { soplos.splice(i, 1); continue; }
+      p.y += p.vy * dt;
+    }
+    for (let i = ondas.length - 1; i >= 0; i--) {
+      ondas[i].t += dt;
+      if (ondas[i].t >= 1) ondas.splice(i, 1);
+    }
+    for (const c of corrientes) {
+      c.x += c.v * dt;
+      if (c.x > W + c.largo) c.x = -c.largo;
+      else if (c.x < -c.largo) c.x = W + c.largo;
+    }
+  }
+
+  function dibujarNotas(ts) {
+    const pps = hitY / CAIDA;
+    const hasta = buscar(ts + CAIDA + 0.1);
+    g.lineWidth = 1;
+    for (let i = buscar(ts - LARGO); i < hasta; i++) {
+      const e = eventos[i];
+      if (e.fin <= ts) continue;
+      const k = tecla[e.m];
+      if (!k) continue;
+      const abajo = hitY - (e.ini - ts) * pps;
+      const arriba = hitY - (e.fin - ts) * pps;
+      const alto = abajo - arriba;
+      if (alto < 2) continue;
+      const x = k.cx - k.ancho / 2;
+      const r = Math.min(k.ancho * 0.28, 7);
+      const viva = e.ini <= ts;
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = NOTA;
+      for (const [d, a] of HALO) {
+        g.globalAlpha = viva ? a * 1.8 : a;
+        redondo(x - d, arriba - d, k.ancho + d * 2, alto + d * 2, r + d);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
+      redondo(x, arriba, k.ancho, alto, r);
+      g.fillStyle = viva ? NOTA_VIVA : NOTA;
+      g.fill();
+      g.strokeStyle = viva ? 'rgba(255,255,255,.85)' : 'rgba(205,253,255,.6)';
+      redondo(x + 0.5, arriba + 0.5, k.ancho - 1, alto - 1, r - 0.5);
+      g.stroke();
+    }
+  }
+
+  function dibujarChispas() {
+    g.globalCompositeOperation = 'lighter';
+    for (const p of chispas) {
+      const f = p.edad / p.vida;
+      punto(CHISPA, p.x, p.y, p.tam * (1 - 0.45 * f), Math.pow(1 - f, 1.3));
+    }
+    g.lineWidth = 1.2;
+    g.lineCap = 'round';
+    for (const r of rayos) {
+      g.globalAlpha = 0.85 * (1 - r.edad / r.vida);
+      g.strokeStyle = '#3c96ff';
+      g.beginPath();
+      g.moveTo(r.x, r.y);
+      g.lineTo(r.x - r.vx * 0.045, r.y - r.vy * 0.045);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  function dibujarTeclado() {
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+    g.fillStyle = '#020306';
+    g.fillRect(0, y0, W, H - y0);
+    const r = Math.min(4, ww * 0.16);
+    for (const k of blancas) {
+      const p = luz[k.m].presion;
+      const x = k.x + 0.6, w = ww - 1.2, h = kbH - 2 * p;
+      forma(x, y0, w, h, r);
+      g.fillStyle = gBlanca;
+      g.fill();
+      if (p > 0.02) {
+        g.globalAlpha = p;
+        g.fillStyle = gBlancaLuz;
+        g.fill();
+        g.globalAlpha = 1;
+      }
+      const labio = 7 - 4.5 * p;
+      forma(x, y0 + h - labio, w, labio, r);
+      g.fillStyle = gLabio;
+      g.fill();
+    }
+    g.fillStyle = 'rgba(0,0,0,.35)';
+    for (const k of negras) g.fillRect(k.x + 1.5, y0, bw + 1.5, bh + 3);
+    const rn = Math.min(3, bw * 0.18);
+    for (const k of negras) {
+      const p = luz[k.m].presion, h = bh - 2 * p;
+      forma(k.x, y0, bw, h, rn);
+      g.fillStyle = gNegra;
+      g.fill();
+      if (p > 0.02) {
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = p * 0.85;
+        g.fillStyle = gNegraLuz;
+        g.fill();
+        g.globalAlpha = 1;
+        g.globalCompositeOperation = 'source-over';
+      }
+      const frente = Math.max(3, bh * 0.09) - 2.5 * p;
+      forma(k.x + 1, y0 + h - frente - 1, bw - 2, frente, Math.min(2, bw * 0.12));
+      g.fillStyle = gFrente;
+      g.fill();
+      g.fillStyle = 'rgba(140,190,255,.09)';
+      g.fillRect(k.x + 1, y0 + 3, 1, Math.max(0, h - frente - 8));
+    }
+  }
+
+  function dibujarHumo() {
+    const alto = altoNiebla * (1 + 0.07 * Math.sin(reloj * 0.6) + 0.1 * energia);
+    g.globalAlpha = 0.72 + 0.1 * energia;
+    g.drawImage(niebla, 0, hitY - alto, W, alto);
+    g.globalCompositeOperation = 'lighter';
+    const brillo = 0.8 + 0.25 * energia;
+    for (const p of humo) {
+      const f = p.edad / p.vida, s = p.tam * (0.7 + 0.7 * f);
+      g.globalAlpha = Math.min(1, p.a * Math.sin(Math.PI * f) * brillo);
+      g.drawImage(NUBE, p.x - s * 1.2, p.y - s * 0.38, s * 2.4, s * 0.76);
+    }
+    if (conVelo) {
+      const tw = Math.max(380, Math.min(950, W * 0.6)), th = altoVelo * 1.5;
+      const tw2 = tw * 0.58, th2 = th * 0.62;
+      vc.globalCompositeOperation = 'copy';
+      vc.globalAlpha = 0.85;
+      matA.a = tw / 512; matA.d = th / 256; matA.e = (reloj * 16) % tw; matA.f = -((reloj * 11) % th);
+      patronA.setTransform(matA);
+      vc.fillStyle = patronA;
+      vc.fillRect(0, 0, W, altoVelo);
+      vc.globalCompositeOperation = 'lighter';
+      vc.globalAlpha = 0.6;
+      matB.a = tw2 / 512; matB.d = th2 / 256; matB.e = -((reloj * 27) % tw2); matB.f = -((reloj * 19) % th2);
+      patronB.setTransform(matB);
+      vc.fillStyle = patronB;
+      vc.fillRect(0, 0, W, altoVelo);
+      vc.globalCompositeOperation = 'destination-in';
+      vc.globalAlpha = 1;
+      vc.fillStyle = gMascara;
+      vc.fillRect(0, 0, W, altoVelo);
+      vc.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 0.5 + 0.15 * energia;
+      g.drawImage(velo, 0, hitY - altoVelo, W, altoVelo);
+    }
+    for (const p of soplos) {
+      const f = p.edad / p.vida, s = p.tam * (0.6 + 0.8 * f);
+      g.globalAlpha = Math.min(1, p.a * (f < 0.15 ? f / 0.15 : Math.pow(1 - (f - 0.15) / 0.85, 1.5)));
+      g.drawImage(NUBE_CIAN, p.x - s * 0.6, p.y - s * 0.5, s * 1.2, s);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  function dibujarLinea() {
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = Math.min(1, 0.8 + 0.1 * Math.sin(reloj * 1.7) + 0.15 * energia);
+    g.fillStyle = gBrilloAbajo;
+    g.fillRect(0, hitY, W, 16);
+    g.fillStyle = gBrilloArriba;
+    g.fillRect(0, hitY - 14, W, 14);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = '#3bd6ff';
+    g.fillRect(0, hitY - 2, W, 4);
+    g.fillStyle = 'rgba(215,248,255,.85)';
+    g.fillRect(0, hitY - 0.75, W, 1.5);
+    g.globalCompositeOperation = 'lighter';
+    for (const c of corrientes) {
+      estirado(FLARE, c.x, hitY, c.largo, 18, 0.35 + 0.25 * Math.sin(reloj * 1.3 + c.fase));
+    }
+    const lejos = Math.max(380, W * 0.45);
+    for (const o of ondas) {
+      const a = o.a * Math.pow(1 - o.t, 1.6) * 0.9, d = o.t * lejos;
+      estirado(FLARE, o.x - d, hitY, 90, 14, a);
+      estirado(FLARE, o.x + d, hitY, 90, 14, a);
+    }
+    for (let m = lo; m <= hi; m++) {
+      const p = luz[m].presion;
+      if (p < 0.03) continue;
+      punto(FLARE, tecla[m].cx, hitY, Math.max(34, ww * 2.8), p * 0.9);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  function tiempoCancion() {
+    return rep.sonando ? relojVisual() - rep.origen : rep.pos;
+  }
+
+  let previo = performance.now();
+  function cuadro(ahora) {
+    const dt = Math.min(0.05, Math.max(0, (ahora - previo) / 1000));
+    previo = ahora;
+    reloj += dt;
+    if (rep.sonando && tiempoCancion() >= DURACION) pausar(true);
+    const ts = tiempoCancion();
+    actualizar(ts, dt);
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+    g.drawImage(fondo, 0, 0, W, H);
+    dibujarHumo();
+    dibujarNotas(ts);
+    dibujarChispas();
+    dibujarTeclado();
+    dibujarLinea();
+    requestAnimationFrame(cuadro);
+  }
+
+  function teclaEn(x, y) {
+    if (y < y0 || y > y0 + kbH) return null;
+    if (y <= y0 + bh) {
+      for (const k of negras) if (x >= k.x && x <= k.x + bw) return k.m;
+    }
+    const k = blancas[Math.floor(x / ww)];
+    return k ? k.m : null;
+  }
+
+  const fuerza = (y) => 0.42 + 0.45 * Math.max(0, Math.min(1, (y - y0) / kbH));
+
+  const punteros = new Map();
+  lienzo.addEventListener('pointerdown', (e) => {
+    despertar();
+    const m = teclaEn(e.clientX, e.clientY);
+    if (m == null) return;
+    e.preventDefault();
+    try { lienzo.setPointerCapture(e.pointerId); } catch (err) {}
+    const antes = punteros.get(e.pointerId);
+    if (antes != null) liberar(antes);
+    punteros.set(e.pointerId, m);
+    pulsar(m, fuerza(e.clientY));
+  });
+  lienzo.addEventListener('pointermove', (e) => {
+    if (!punteros.has(e.pointerId)) return;
+    const m = teclaEn(e.clientX, e.clientY), antes = punteros.get(e.pointerId);
+    if (m === antes) return;
+    if (antes != null) liberar(antes);
+    punteros.set(e.pointerId, m);
+    if (m != null) pulsar(m, fuerza(e.clientY) * 0.85);
+  });
+  const terminarPuntero = (e) => {
+    if (!punteros.has(e.pointerId)) return;
+    const m = punteros.get(e.pointerId);
+    punteros.delete(e.pointerId);
+    if (m != null) liberar(m);
+  };
+  window.addEventListener('pointerup', terminarPuntero);
+  window.addEventListener('pointercancel', terminarPuntero);
+  lienzo.addEventListener('lostpointercapture', terminarPuntero);
+  lienzo.addEventListener('contextmenu', (e) => e.preventDefault());
+  window.addEventListener('pointerup', despertar);
+  window.addEventListener('touchend', despertar);
+
+  const TECLAS = {
+    KeyZ: 48, KeyS: 49, KeyX: 50, KeyD: 51, KeyC: 52, KeyV: 53, KeyG: 54, KeyB: 55, KeyH: 56, KeyN: 57, KeyJ: 58, KeyM: 59,
+    Comma: 60, KeyL: 61, Period: 62, Semicolon: 63, Slash: 64,
+    KeyQ: 60, Digit2: 61, KeyW: 62, Digit3: 63, KeyE: 64, KeyR: 65, Digit5: 66, KeyT: 67, Digit6: 68, KeyY: 69, Digit7: 70,
+    KeyU: 71, KeyI: 72, Digit9: 73, KeyO: 74, Digit0: 75, KeyP: 76, BracketLeft: 77, Equal: 78, BracketRight: 79
+  };
+  const pulsadas = new Set();
+
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      despertar();
+      pedal = true;
+      return;
+    }
+    const m = TECLAS[e.code];
+    if (m == null) return;
+    e.preventDefault();
+    if (e.repeat || pulsadas.has(e.code)) return;
+    pulsadas.add(e.code);
+    pulsar(m, 0.62);
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); soltarPedal(); return; }
+    if (!pulsadas.has(e.code)) return;
+    pulsadas.delete(e.code);
+    liberar(TECLAS[e.code]);
+  });
+
+  function soltarTodo() {
+    for (const code of pulsadas) liberar(TECLAS[code]);
+    pulsadas.clear();
+    for (const [, m] of punteros) if (m != null) liberar(m);
+    punteros.clear();
+    soltarPedal();
+  }
+  window.addEventListener('blur', soltarTodo);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { pausar(false); soltarTodo(); }
+  });
+
+  boton.addEventListener('click', (e) => {
+    despertar();
+    if (rep.sonando) pausar(false);
+    else if (pendiente) pendiente = false;
+    else empezar();
+    if (e.detail > 0) boton.blur();
+  });
+
+  window.addEventListener('resize', medir);
+  medir();
+  cargar();
+  setInterval(programar, 25);
+  requestAnimationFrame(cuadro);
+})();
+</script>
+</body>
+</html>
