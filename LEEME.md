@@ -26,6 +26,7 @@ El piano (`piano/`) también es carpeta: `index.html` es el piano, `cancion.js`
 trae la canción ("In the Pool", convertida de un MIDI) y `sonido.js` trae las
 muestras del piano (Salamander Grand Piano, de Alexander Holm, licencia CC BY 3.0)
 metidas dentro del JS, así que funciona igual con doble clic que desde el enlace.
+`fondo.jpg` es la foto de fondo, ya achicada a 1920 px y un poco difuminada.
 Para cambiar la canción basta con cambiar `cancion.js`.
 
 Cada una de las demás páginas es un HTML suelto y autónomo (solo carga fuentes de Google), así que
